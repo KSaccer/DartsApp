@@ -90,7 +90,7 @@ class ScoreEntryBlock(tk.LabelFrame):
         throws = self.get_values()
         throws_sum = 0
 
-        # check if all entry fields are filled
+        # check if all entry fields are filled, if so, calculate sum
         if not all(throws):
             return
         for throw in throws:
@@ -179,7 +179,7 @@ class ButtonsFrame(tk.Frame):
         self.parent = parent
         self.rowconfigure(0, weight=1)
         self.columnconfigure((0, 1), weight=1)
-        finish_button = tk.Button(self, text="Finish", command=parent.destroy)
+        finish_button = tk.Button(self, text="Finish", command=self.finish)
         restart_button = tk.Button(self, text="Restart", command=self.restart)
         finish_button.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
@@ -189,13 +189,20 @@ class ButtonsFrame(tk.Frame):
         "Confirmation",
         "Do you really want to restart the session? Scores and statistics will be discarded!")
 
-        if response:
-            # Reset statistics
+        if response:    # Reset statistics and clear table
             self.parent.statistics.reset()
-            # Reset throw history table
             self.parent.throw_history.clear_table()
         else:
-            pass  # Session continues if user clicks Cancel
+            pass    # Session continues if user clicks Cancel
+
+    def finish(self):
+        # 1. Insert data into database
+        db = DataBase("darts_data.db")
+        for value in self.parent.throw_history.get_records():
+            db.insert_data(value)
+
+        # 2. Close application
+        self.parent.destroy()
 
 
 class ThrowHistory(tk.LabelFrame):
@@ -206,21 +213,25 @@ class ThrowHistory(tk.LabelFrame):
         self.items = None
 
         columns = {
-            "id": "ID",
-            "throw_1": "1st Throw",
-            "throw_2": "2nd Throw",
-            "throw_3": "3rd Throw",
-            "throw_sum": "SUM"
+            "id": ("ID", True),
+            "timestep": ("Timestep", False),
+            "throw_1": ("1st Throw", True),
+            "throw_2": ("2nd Throw", True),
+            "throw_3": ("3rd Throw", True),
+            "throw_sum": ("SUM", True)
         }
         self.throw_history = ttk.Treeview(self, columns=list(columns.keys()))
         self.throw_history.grid(row=0, column=0, padx=10, pady=10, sticky="ns")
 
         # Column config
         self.throw_history['show'] = 'headings'
+        self.throw_history["displaycolumns"] = [
+            column for column in columns if columns[column][1]
+            ]
         for column in columns:
-            self.throw_history.heading(column, text=columns[column])
+            self.throw_history.heading(column, text=columns[column][0])
             self.throw_history.column(column, width=80, anchor=tk.CENTER)
-        self.throw_history.column("#0", width=80, anchor=tk.CENTER)
+        # self.throw_history.column("#0", width=80, anchor=tk.CENTER)
 
         # Throw history Scrollbar
         scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.throw_history.yview)
@@ -228,16 +239,88 @@ class ThrowHistory(tk.LabelFrame):
         scrollbar.grid(row=0, column=1, sticky='ns')
 
     def add_record(self, record):
+        ts = datetime.timestamp(datetime.now())
         if self.items:
             last_id = int(self.throw_history.item(self.items[-1])["values"][0])
         else:
             last_id = 0
-        self.throw_history.insert("", tk.END, values=[last_id + 1] + record)
+        self.throw_history.insert("", tk.END, values=[last_id + 1] + [ts] + record)
         self.items = self.throw_history.get_children()
 
     def clear_table(self):
         self.throw_history.delete(*self.items)
         self.items = None
+
+    def get_records(self):
+        for item in self.items:
+            yield self.throw_history.item(item)["values"]
+
+
+class DataBase():
+    def __init__(self, db_path):
+        self.db_path = db_path
+        db_conn = self.create_connection()
+        with db_conn:
+            self.create_tables(db_conn)
+            self.last_game_id = self.get_last_game_id(db_conn)
+            self.insert_game(db_conn)
+
+    def get_last_game_id(self, db_conn):
+        cursor = db_conn.cursor()
+        cursor.execute("SELECT MAX(game_id) FROM games")
+        game_id = cursor.fetchone()[0]
+        if not game_id:
+            return 0
+        return game_id
+    
+    def create_connection(self):
+        db_conn = sqlite3.connect(self.db_path)
+        return db_conn
+
+    def create_tables(self, db_conn):
+        cursor = db_conn.cursor()
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS games (
+                           game_id INT,
+                           datetime DATETIME,
+                           type TEXT NOT NULL,
+                           PRIMARY KEY (game_id)
+                       )
+                       ''')
+        cursor.execute('''
+                       CREATE TABLE IF NOT EXISTS throws (
+                           game_id INT,
+                           timestamp TIMESTAMP NOT NULL,
+                           throw_1 TEXT NOT NULL,
+                           throw_2 TEXT NOT NULL,
+                           throw_3 TEXT NOT NULL,
+                           PRIMARY KEY(timestamp),
+                           FOREIGN KEY(game_id) REFERENCES games(game_id)
+                       );
+
+                       ''')
+        db_conn.commit()
+
+    def insert_game(self, db_conn):
+        cursor = db_conn.cursor()
+        cursor.execute(
+            "INSERT INTO games VALUES (?, ?, ?)",
+            (self.last_game_id + 1, datetime.now(), "Scoring")
+            )
+        db_conn.commit()
+
+    def insert_data(self, record):
+        # 1. Open database
+        db_conn = sqlite3.connect(self.db_path)
+        cursor = db_conn.cursor()
+        # 2. Insert data
+        cursor.execute(
+            "INSERT INTO throws VALUES (?, ?, ?, ?, ?)",
+            (self.last_game_id, *record[1:-1])
+            )
+        # 3. Close database
+        db_conn.commit()
+        db_conn.close()
 
 
 DartsApp()
