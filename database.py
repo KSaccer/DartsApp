@@ -1,13 +1,17 @@
 import sqlite3
 from datetime import datetime
 
+SQL_SCRIPT_PATH = "db_initialize.sql"
+
 
 class DataBase():
     def __init__(self, db_path):
         self.db_path = db_path
         db_conn = self.create_connection()
         with db_conn:
-            self.create_tables(db_conn)
+            with open(SQL_SCRIPT_PATH, "r") as sql_script_file:
+                sql_script = sql_script_file.read()
+                self.db_initialize(db_conn, sql_script)
             self.last_game_id = self.get_last_game_id(db_conn)
             self.insert_game(db_conn)
 
@@ -23,28 +27,9 @@ class DataBase():
         db_conn = sqlite3.connect(self.db_path)
         return db_conn
 
-    def create_tables(self, db_conn):
+    def db_initialize(self, db_conn, sql_script):
         cursor = db_conn.cursor()
-        cursor.execute('''
-                       CREATE TABLE IF NOT EXISTS games (
-                           game_id INT,
-                           datetime DATETIME,
-                           type TEXT NOT NULL,
-                           PRIMARY KEY (game_id)
-                       )
-                       ''')
-        cursor.execute('''
-                       CREATE TABLE IF NOT EXISTS throws (
-                           game_id INT,
-                           timestamp TIMESTAMP NOT NULL,
-                           throw_1 TEXT NOT NULL,
-                           throw_2 TEXT NOT NULL,
-                           throw_3 TEXT NOT NULL,
-                           PRIMARY KEY(timestamp),
-                           FOREIGN KEY(game_id) REFERENCES games(game_id)
-                       );
-
-                       ''')
+        cursor.executescript(sql_script)
         db_conn.commit()
 
     def insert_game(self, db_conn):
@@ -54,6 +39,7 @@ class DataBase():
             (self.last_game_id + 1, datetime.now(), "Scoring")
             )
         db_conn.commit()
+        self.last_game_id += 1
 
     def insert_data(self, record):
         # 1. Open database
