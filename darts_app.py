@@ -1,8 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import sqlite3
 from tkinter import messagebox
 from datetime import datetime
+from database import DataBase
 
 
 FONT_TITLE = ("Arial", 20, "bold")
@@ -24,35 +24,42 @@ class DartsApp(tk.Tk):
         self.rowconfigure(3, weight=1)
         self.columnconfigure((0, 1), weight=1)
 
+        # Initialize database
+        self.db = DataBase("darts_data.db")
+
         # populating widgets
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, columnspan=2)
 
         self.score_entry_block = ScoreEntryBlock(self, text="Enter Score")
-        self.score_entry_block.grid(row=1, column=0, padx=10, pady=10, sticky="news")
+        self.score_entry_block.grid(row=1, column=0, padx=10, pady=10,
+                                    sticky="news")
 
         self.statistics = Statistics(self, text="Session Statistics")
         self.statistics.grid(row=2, column=0, padx=10, pady=10, sticky="news")
 
         self.buttons_frame = ButtonsFrame(self, relief="groove", border=2)
-        self.buttons_frame.grid(row=3, column=0, padx=10, pady=10, sticky="news")
+        self.buttons_frame.grid(row=3, column=0, padx=10, pady=10,
+                                sticky="news")
 
         self.throw_history = ThrowHistory(self, text="Throw History")
-        self.throw_history.grid(row=1, column=1, padx=10, pady=10, rowspan=3, sticky="news")
+        self.throw_history.grid(row=1, column=1, padx=10, pady=10,
+                                rowspan=3, sticky="news")
 
         # run
         self.score_entry_block.throw_1.value.focus_set()
         self.mainloop()
 
 
-class PageTitle(tk.Frame):
+class PageTitle(ttk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        label = tk.Label(self, text="Darts Scoring Practice Session", font=FONT_TITLE)
+        label = ttk.Label(self, text="Darts Scoring Practice Session",
+                          font=FONT_TITLE)
         label.pack(expand=True, fill="both")
 
 
-class ScoreEntryBlock(tk.LabelFrame):
+class ScoreEntryBlock(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -61,11 +68,16 @@ class ScoreEntryBlock(tk.LabelFrame):
         self.throw_1 = ThrowEntry(self, "1st Throw:", 0)
         self.throw_2 = ThrowEntry(self, "2nd Throw:", 1)
         self.throw_3 = ThrowEntry(self, "3rd Throw:", 2)
-        self.submit = tk.Button(self, text="Submit", command=self.submit_data)
-        self.submit.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="news")
-        self.throw_1.value.bind("<Return>", lambda event=None: self.throw_2.value.focus_set())
-        self.throw_2.value.bind("<Return>", lambda event=None: self.throw_3.value.focus_set())
-        self.throw_3.value.bind("<Return>", lambda event=None: self.submit.invoke())
+        self.submit = ttk.Button(self, text="Submit",
+                                 command=self.submit_data)
+        self.submit.grid(row=3, column=0, columnspan=2, padx=10, pady=10,
+                         sticky="news")
+        self.throw_1.value.bind("<Return>", lambda event=None:
+                                self.throw_2.value.focus_set())
+        self.throw_2.value.bind("<Return>", lambda event=None:
+                                self.throw_3.value.focus_set())
+        self.throw_3.value.bind("<Return>", lambda event=None:
+                                self.submit.invoke())
 
     def clear_values(self):
         self.throw_1.value.delete(0, tk.END)
@@ -90,7 +102,7 @@ class ScoreEntryBlock(tk.LabelFrame):
         throws = self.get_values()
         throws_sum = 0
 
-        # check if all entry fields are filled
+        # check if all entry fields are filled, if so, calculate sum
         if not all(throws):
             return
         for throw in throws:
@@ -128,14 +140,14 @@ class ScoreEntryBlock(tk.LabelFrame):
 
 
 class ThrowEntry():
-    def __init__(self, parent, label_text, row, *args, **kwargs):
-        self.label = tk.Label(parent, text=label_text)
-        self.value = tk.Entry(parent)
+    def __init__(self, parent, label_text, row):
+        self.label = ttk.Label(parent, text=label_text)
+        self.value = ttk.Entry(parent)
         self.label.grid(row=row, column=0, padx=10, pady=10)
         self.value.grid(row=row, column=1, padx=10, pady=10)
 
 
-class Statistics(tk.LabelFrame):
+class Statistics(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure((0, 1, 2, 3), weight=1)
@@ -153,7 +165,8 @@ class Statistics(tk.LabelFrame):
             "current_max": self.current_max.value.cget("text")
         }
 
-    def set_statistics(self, *, avg, darts_thrown, score, current_max): # keyword argus without default values
+    # keyword args without default values
+    def set_statistics(self, *, avg, darts_thrown, score, current_max):
         self.avg.value.config(text=avg)
         self.darts_thrown.value.config(text=darts_thrown)
         self.score.value.config(text=score)
@@ -165,79 +178,100 @@ class Statistics(tk.LabelFrame):
 
 
 class StatField():
-    def __init__(self, parent, label_text, value_text, row, *args, **kwargs):
+    def __init__(self, parent, label_text, value_text, row):
         self.initial_value = value_text
-        self.label = tk.Label(parent, text=label_text)
-        self.value = tk.Label(parent, text=value_text)
+        self.label = ttk.Label(parent, text=label_text)
+        self.value = ttk.Label(parent, text=value_text)
         self.label.grid(row=row, column=0, padx=10, pady=10, sticky="e")
         self.value.grid(row=row, column=1, padx=10, pady=10, sticky="w")
 
 
-class ButtonsFrame(tk.Frame):
+class ButtonsFrame(ttk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure(0, weight=1)
         self.columnconfigure((0, 1), weight=1)
-        finish_button = tk.Button(self, text="Finish", command=parent.destroy)
-        restart_button = tk.Button(self, text="Restart", command=self.restart)
+        finish_button = ttk.Button(self, text="Finish",
+                                   command=self.finish)
+        restart_button = ttk.Button(self, text="Restart",
+                                    command=self.restart)
         finish_button.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
     def restart(self):
+        '''Reset session - clear statistics and table records'''
+
         response = messagebox.askokcancel(
-        "Confirmation",
-        "Do you really want to restart the session? Scores and statistics will be discarded!")
+            "Confirmation",
+            "Do you really want to restart the session?\n"
+            "Scores and statistics will be discarded!")
 
         if response:
-            # Reset statistics
             self.parent.statistics.reset()
-            # Reset throw history table
             self.parent.throw_history.clear_table()
         else:
-            pass  # Session continues if user clicks Cancel
+            pass    # Session continues if user clicks Cancel
+
+    def finish(self):
+        '''Insert data into database and close application'''
+
+        for value in self.parent.throw_history.get_records():
+            self.parent.db.insert_data(value)
+        self.parent.destroy()
 
 
-class ThrowHistory(tk.LabelFrame):
+class ThrowHistory(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.items = None
+        self.items = []
 
         columns = {
-            "id": "ID",
-            "throw_1": "1st Throw",
-            "throw_2": "2nd Throw",
-            "throw_3": "3rd Throw",
-            "throw_sum": "SUM"
+            "id": ("ID", True),
+            "timestep": ("Timestep", False),
+            "throw_1": ("1st Throw", True),
+            "throw_2": ("2nd Throw", True),
+            "throw_3": ("3rd Throw", True),
+            "throw_sum": ("SUM", True)
         }
         self.throw_history = ttk.Treeview(self, columns=list(columns.keys()))
-        self.throw_history.grid(row=0, column=0, padx=10, pady=10, sticky="ns")
+        self.throw_history.grid(row=0, column=0, padx=10, pady=10,
+                                sticky="ns")
 
         # Column config
         self.throw_history['show'] = 'headings'
+        self.throw_history["displaycolumns"] = [
+            column for column in columns if columns[column][1]
+            ]
         for column in columns:
-            self.throw_history.heading(column, text=columns[column])
+            self.throw_history.heading(column, text=columns[column][0])
             self.throw_history.column(column, width=80, anchor=tk.CENTER)
-        self.throw_history.column("#0", width=80, anchor=tk.CENTER)
 
         # Throw history Scrollbar
-        scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.throw_history.yview)
+        scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL,
+                                  command=self.throw_history.yview)
         self.throw_history.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='ns')
 
     def add_record(self, record):
+        ts = datetime.timestamp(datetime.now())
         if self.items:
             last_id = int(self.throw_history.item(self.items[-1])["values"][0])
         else:
             last_id = 0
-        self.throw_history.insert("", tk.END, values=[last_id + 1] + record)
+        values = [last_id + 1] + [ts] + record
+        self.throw_history.insert("", tk.END, values=values)
         self.items = self.throw_history.get_children()
 
     def clear_table(self):
         self.throw_history.delete(*self.items)
-        self.items = None
+        self.items = []
+
+    def get_records(self):
+        for item in self.items:
+            yield self.throw_history.item(item)["values"]
 
 
 DartsApp()
