@@ -1,8 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import sqlite3
 from tkinter import messagebox
 from datetime import datetime
+from database import DataBase
 
 
 FONT_TITLE = ("Arial", 20, "bold")
@@ -10,10 +10,10 @@ FONT_DEFAULT = ("Arial", 10)
 
 
 class DartsApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         # main config
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.title("Darts Scoring App")
         self.geometry("800x600")
         self.resizable(False, False)
@@ -24,7 +24,7 @@ class DartsApp(tk.Tk):
         self.rowconfigure(3, weight=1)
         self.columnconfigure((0, 1), weight=1)
 
-        # Create database
+        # Initialize database
         self.db = DataBase("darts_data.db")
 
         # populating widgets
@@ -272,73 +272,6 @@ class ThrowHistory(ttk.LabelFrame):
     def get_records(self):
         for item in self.items:
             yield self.throw_history.item(item)["values"]
-
-
-class DataBase():
-    def __init__(self, db_path):
-        self.db_path = db_path
-        db_conn = self.create_connection()
-        with db_conn:
-            self.create_tables(db_conn)
-            self.last_game_id = self.get_last_game_id(db_conn)
-            self.insert_game(db_conn)
-
-    def get_last_game_id(self, db_conn):
-        cursor = db_conn.cursor()
-        cursor.execute("SELECT MAX(game_id) FROM games")
-        game_id = cursor.fetchone()[0]
-        if not game_id:
-            return 0
-        return game_id
-
-    def create_connection(self):
-        db_conn = sqlite3.connect(self.db_path)
-        return db_conn
-
-    def create_tables(self, db_conn):
-        cursor = db_conn.cursor()
-        cursor.execute('''
-                       CREATE TABLE IF NOT EXISTS games (
-                           game_id INT,
-                           datetime DATETIME,
-                           type TEXT NOT NULL,
-                           PRIMARY KEY (game_id)
-                       )
-                       ''')
-        cursor.execute('''
-                       CREATE TABLE IF NOT EXISTS throws (
-                           game_id INT,
-                           timestamp TIMESTAMP NOT NULL,
-                           throw_1 TEXT NOT NULL,
-                           throw_2 TEXT NOT NULL,
-                           throw_3 TEXT NOT NULL,
-                           PRIMARY KEY(timestamp),
-                           FOREIGN KEY(game_id) REFERENCES games(game_id)
-                       );
-
-                       ''')
-        db_conn.commit()
-
-    def insert_game(self, db_conn):
-        cursor = db_conn.cursor()
-        cursor.execute(
-            "INSERT INTO games VALUES (?, ?, ?)",
-            (self.last_game_id + 1, datetime.now(), "Scoring")
-            )
-        db_conn.commit()
-
-    def insert_data(self, record):
-        # 1. Open database
-        db_conn = sqlite3.connect(self.db_path)
-        cursor = db_conn.cursor()
-        # 2. Insert data
-        cursor.execute(
-            "INSERT INTO throws VALUES (?, ?, ?, ?, ?)",
-            (self.last_game_id, *record[1:-1])
-            )
-        # 3. Close database
-        db_conn.commit()
-        db_conn.close()
 
 
 DartsApp()
