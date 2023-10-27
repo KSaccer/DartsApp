@@ -13,7 +13,6 @@ class DataBase():
                 sql_script = sql_script_file.read()
                 self.db_initialize(db_conn, sql_script)
             self.last_game_id = self.get_last_game_id(db_conn)
-            self.insert_game(db_conn)
 
     def get_last_game_id(self, db_conn):
         cursor = db_conn.cursor()
@@ -32,11 +31,12 @@ class DataBase():
         cursor.executescript(sql_script)
         db_conn.commit()
 
-    def insert_game(self, db_conn):
+    def insert_game(self, record):
+        db_conn = sqlite3.connect(self.db_path)
         cursor = db_conn.cursor()
         cursor.execute(
             "INSERT INTO games VALUES (?, ?, ?)",
-            (self.last_game_id + 1, datetime.now(), "Scoring")
+            (*record, )
             )
         db_conn.commit()
         self.last_game_id += 1

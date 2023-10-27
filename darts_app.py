@@ -9,6 +9,14 @@ FONT_TITLE = ("Arial", 20, "bold")
 FONT_DEFAULT = ("Arial", 10)
 
 
+class Game():
+    def __init__(self, game_id, game_type="Scoring"):
+        self.game_id = game_id
+        self.game_type = game_type
+        self.start = None
+        self.end = None
+
+
 class DartsApp(tk.Tk):
     def __init__(self, *args, **kwargs):
 
@@ -26,6 +34,9 @@ class DartsApp(tk.Tk):
 
         # Initialize database
         self.db = DataBase("darts_data.db")
+
+        # Initialize Game
+        self.game = Game(self.db.last_game_id + 1)
 
         # populating widgets
         self.page_title = PageTitle(self)
@@ -93,10 +104,15 @@ class ScoreEntryBlock(ttk.LabelFrame):
 
     def submit_data(self):
         '''
+        0. Initialize Game.start time, if it's none
         1. Get entried scores, populate table, clear entry fields
         2. Update Statistics fields
         3. Set focus to throw_1 entry field
         '''
+
+        # 0. Initialize Game.start time, if it's none
+        if not self.parent.game.start:
+            self.parent.game.start = datetime.now()
 
         # 1. Get entried scores, populate table, clear entry fields
         throws = self.get_values()
@@ -210,12 +226,24 @@ class ButtonsFrame(ttk.Frame):
         if response:
             self.parent.statistics.reset()
             self.parent.throw_history.clear_table()
+            self.parent.game.start = None
         else:
             pass    # Session continues if user clicks Cancel
 
     def finish(self):
         '''Insert data into database and close application'''
 
+        # Insert game
+        if self.parent.game.start:
+            self.parent.game.end = datetime.now()
+            record = (
+                self.parent.game.game_id,
+                self.parent.game.start,
+                self.parent.game.game_type
+                )
+            self.parent.db.insert_game(record)
+
+        # Insert throws
         for value in self.parent.throw_history.get_records():
             self.parent.db.insert_data(value)
         self.parent.destroy()
