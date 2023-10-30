@@ -23,6 +23,7 @@ class DartsApp(tk.Tk):
         # main config
         super().__init__(*args, **kwargs)
         self.title("Darts Scoring App")
+        self.iconbitmap(default="pics/dartboard.ico")
         self.geometry("800x600")
         self.resizable(False, False)
         self.option_add("*Font", FONT_DEFAULT)
@@ -216,7 +217,7 @@ class ButtonsFrame(ttk.Frame):
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
     def restart(self):
-        '''Reset session - clear statistics and table records'''
+        """Reset session - clear statistics and table records"""
 
         response = messagebox.askokcancel(
             "Confirmation",
@@ -231,21 +232,22 @@ class ButtonsFrame(ttk.Frame):
             pass    # Session continues if user clicks Cancel
 
     def finish(self):
-        '''Insert data into database and close application'''
+        """Insert data into database and close application"""
 
         # Insert game
         if self.parent.game.start:
             self.parent.game.end = datetime.now()
-            record = (
+            game_data = (
                 self.parent.game.game_id,
                 self.parent.game.start,
                 self.parent.game.game_type
                 )
-            self.parent.db.insert_game(record)
+            self.parent.db.insert_game(game_data)
 
         # Insert throws
         for value in self.parent.throw_history.get_records():
-            self.parent.db.insert_data(value)
+            throw_data = tuple(value[1:-1])
+            self.parent.db.insert_data(throw_data)
         self.parent.destroy()
 
 
