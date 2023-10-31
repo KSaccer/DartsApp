@@ -2,6 +2,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import messagebox
 from datetime import datetime
+from typing import Generator
+
 from database import DataBase
 
 
@@ -10,7 +12,7 @@ FONT_DEFAULT = ("Arial", 10)
 
 
 class Game():
-    def __init__(self, game_id, game_type="Scoring"):
+    def __init__(self, game_id: int, game_type: str = "Scoring") -> None:
         self.game_id = game_id
         self.game_type = game_type
         self.start = None
@@ -18,7 +20,7 @@ class Game():
 
 
 class DartsApp(tk.Tk):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
 
         # main config
         super().__init__(*args, **kwargs)
@@ -35,11 +37,15 @@ class DartsApp(tk.Tk):
 
         # Initialize database
         self.db = DataBase("darts_data.db")
-
         # Initialize Game
         self.game = Game(self.db.last_game_id + 1)
-
         # populating widgets
+        self.create_gui()
+        # run
+        self.score_entry_block.throw_1.value.focus_set()
+        self.mainloop()
+
+    def create_gui(self) -> None:
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, columnspan=2)
 
@@ -58,13 +64,9 @@ class DartsApp(tk.Tk):
         self.throw_history.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
 
-        # run
-        self.score_entry_block.throw_1.value.focus_set()
-        self.mainloop()
-
 
 class PageTitle(ttk.Frame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         label = ttk.Label(self, text="Darts Scoring Practice Session",
                           font=FONT_TITLE)
@@ -72,7 +74,7 @@ class PageTitle(ttk.Frame):
 
 
 class ScoreEntryBlock(ttk.LabelFrame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure((0, 1, 2, 3), weight=1)
@@ -91,25 +93,25 @@ class ScoreEntryBlock(ttk.LabelFrame):
         self.throw_3.value.bind("<Return>", lambda event=None:
                                 self.submit.invoke())
 
-    def clear_values(self):
+    def clear_values(self) -> None:
         self.throw_1.value.delete(0, tk.END)
         self.throw_2.value.delete(0, tk.END)
         self.throw_3.value.delete(0, tk.END)
 
-    def get_values(self):
+    def get_values(self) -> list:
         return [
             self.throw_1.value.get(),
             self.throw_2.value.get(),
             self.throw_3.value.get()
             ]
 
-    def submit_data(self):
-        '''
+    def submit_data(self) -> None:
+        """
         0. Initialize Game.start time, if it's none
         1. Get entried scores, populate table, clear entry fields
         2. Update Statistics fields
         3. Set focus to throw_1 entry field
-        '''
+        """
 
         # 0. Initialize Game.start time, if it's none
         if not self.parent.game.start:
@@ -131,7 +133,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
                 throws_sum += int(throw)
 
         # populate table with throw data
-        record = [throw.upper() for throw in throws] + [throws_sum]
+        record = tuple([throw.upper() for throw in throws] + [throws_sum])
         self.parent.throw_history.add_record(record)
         self.clear_values()
 
@@ -157,7 +159,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
 
 
 class ThrowEntry():
-    def __init__(self, parent, label_text, row):
+    def __init__(self, parent, label_text: str, row: int) -> None:
         self.label = ttk.Label(parent, text=label_text)
         self.value = ttk.Entry(parent)
         self.label.grid(row=row, column=0, padx=10, pady=10)
@@ -165,7 +167,7 @@ class ThrowEntry():
 
 
 class Statistics(ttk.LabelFrame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure((0, 1, 2, 3), weight=1)
         self.columnconfigure((0, 1), weight=1)
@@ -174,7 +176,7 @@ class Statistics(ttk.LabelFrame):
         self.score = StatField(self, "Score:", "0", 2)
         self.current_max = StatField(self, "Current maximum:", "0", 3)
 
-    def get_statistics(self):
+    def get_statistics(self) -> dict:
         return {
             "avg": self.avg.value.cget("text"),
             "darts_thrown": self.darts_thrown.value.cget("text"),
@@ -183,19 +185,21 @@ class Statistics(ttk.LabelFrame):
         }
 
     # keyword args without default values
-    def set_statistics(self, *, avg, darts_thrown, score, current_max):
+    def set_statistics(self, *, avg: str, darts_thrown: str,
+                       score: str, current_max: str) -> None:
         self.avg.value.config(text=avg)
         self.darts_thrown.value.config(text=darts_thrown)
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
 
-    def reset(self):
+    def reset(self) -> None:
         for _ in [self.avg, self.darts_thrown, self.score, self.current_max]:
             _.value.config(text=_.initial_value)
 
 
 class StatField():
-    def __init__(self, parent, label_text, value_text, row):
+    def __init__(self, parent, label_text: str,
+                 value_text: str, row: int) -> None:
         self.initial_value = value_text
         self.label = ttk.Label(parent, text=label_text)
         self.value = ttk.Label(parent, text=value_text)
@@ -204,7 +208,7 @@ class StatField():
 
 
 class ButtonsFrame(ttk.Frame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure(0, weight=1)
@@ -216,7 +220,7 @@ class ButtonsFrame(ttk.Frame):
         finish_button.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
-    def restart(self):
+    def restart(self) -> None:
         """Reset session - clear statistics and table records"""
 
         response = messagebox.askokcancel(
@@ -231,7 +235,7 @@ class ButtonsFrame(ttk.Frame):
         else:
             pass    # Session continues if user clicks Cancel
 
-    def finish(self):
+    def finish(self) -> None:
         """Insert data into database and close application"""
 
         # Insert game
@@ -252,7 +256,7 @@ class ButtonsFrame(ttk.Frame):
 
 
 class ThrowHistory(ttk.LabelFrame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -285,21 +289,21 @@ class ThrowHistory(ttk.LabelFrame):
         self.throw_history.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='ns')
 
-    def add_record(self, record):
+    def add_record(self, record: tuple) -> None:
         ts = datetime.timestamp(datetime.now())
         if self.items:
             last_id = int(self.throw_history.item(self.items[-1])["values"][0])
         else:
             last_id = 0
-        values = [last_id + 1] + [ts] + record
+        values = [last_id + 1] + [ts] + [*record]
         self.throw_history.insert("", tk.END, values=values)
         self.items = self.throw_history.get_children()
 
-    def clear_table(self):
+    def clear_table(self) -> None:
         self.throw_history.delete(*self.items)
         self.items = []
 
-    def get_records(self):
+    def get_records(self) -> Generator[str, None, None]:
         for item in self.items:
             yield self.throw_history.item(item)["values"]
 
