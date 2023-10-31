@@ -3,12 +3,14 @@ import tkinter.ttk as ttk
 from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
+from functools import partial
 
 from database import DataBase
 
 
 FONT_TITLE = ("Arial", 20, "bold")
 FONT_DEFAULT = ("Arial", 10)
+FONT_MENU = ("Malgun Gothic", 12)
 
 
 class Game():
@@ -21,14 +23,59 @@ class Game():
 
 class DartsApp(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
-
-        # main config
         super().__init__(*args, **kwargs)
         self.title("Darts Scoring App")
         self.iconbitmap(default="pics/dartboard.ico")
-        self.geometry("800x600")
+        self.geometry("1000x600")
         self.resizable(False, False)
         self.option_add("*Font", FONT_DEFAULT)
+
+        menu_style = ttk.Style()
+        menu_style.configure("Menu.TFrame", background="#44546A")
+        self.menu = Menu(self, style="Menu.TFrame")
+        self.menu.pack(ipadx=20, side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.scoring = Scoring(self)
+        self.scoring.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        self.mainloop()
+
+
+class Menu(ttk.Frame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        label1 = ttk.Label(self, text="DASHBOARD", font=FONT_MENU,
+                           background="#44546A", foreground="white")
+        label1.pack(ipadx=20, pady=(20, 5), side=tk.TOP, 
+                    fill=tk.BOTH, anchor=tk.NW)
+        label2 = ttk.Label(self, text="SCORING", font=FONT_MENU,
+                           background="#44546A", foreground="white")
+        label2.pack(ipadx=20, pady=5, side=tk.TOP, 
+                    fill=tk.BOTH,  anchor=tk.NW)
+        label3 = ttk.Label(self, text="STATISTICS", font=FONT_MENU,
+                           background="#44546A", foreground="white")
+        label3.pack(ipadx=20, pady=5, side=tk.TOP, 
+                    fill=tk.BOTH,  anchor=tk.NW)
+        label4 = ttk.Label(self, text="SETTINGS", font=FONT_MENU,
+                           background="#44546A", foreground="white")
+        label4.pack(ipadx=20, pady=5, side=tk.TOP, 
+                    fill=tk.BOTH,  anchor=tk.NW)
+        label1.bind("<Enter>", partial(self.color_config, label1, "#333F50"))
+        label1.bind("<Leave>", partial(self.color_config, label1, "#44546A"))
+
+    def color_config(self, widget, color, event):
+        widget.configure(background=color)
+
+class Scoring2(tk.LabelFrame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+
+
+class Scoring(ttk.Frame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+
+        # main config
+        super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=5)
         self.rowconfigure(2, weight=3)
@@ -43,7 +90,6 @@ class DartsApp(tk.Tk):
         self.create_gui()
         # run
         self.score_entry_block.throw_1.value.focus_set()
-        self.mainloop()
 
     def create_gui(self) -> None:
         self.page_title = PageTitle(self)
@@ -207,7 +253,7 @@ class StatField():
         self.value.grid(row=row, column=1, padx=10, pady=10, sticky="w")
 
 
-class ButtonsFrame(ttk.Frame):
+class ButtonsFrame(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
