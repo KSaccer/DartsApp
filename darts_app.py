@@ -44,31 +44,39 @@ class DartsApp(tk.Tk):
 class Menu(ttk.Frame):
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
-        label1 = ttk.Label(self, text="DASHBOARD", font=FONT_MENU,
-                           background="#44546A", foreground="white")
-        label1.pack(ipadx=20, pady=(20, 5), side=tk.TOP, 
-                    fill=tk.BOTH, anchor=tk.NW)
-        label2 = ttk.Label(self, text="SCORING", font=FONT_MENU,
-                           background="#44546A", foreground="white")
-        label2.pack(ipadx=20, pady=5, side=tk.TOP, 
-                    fill=tk.BOTH,  anchor=tk.NW)
-        label3 = ttk.Label(self, text="STATISTICS", font=FONT_MENU,
-                           background="#44546A", foreground="white")
-        label3.pack(ipadx=20, pady=5, side=tk.TOP, 
-                    fill=tk.BOTH,  anchor=tk.NW)
-        label4 = ttk.Label(self, text="SETTINGS", font=FONT_MENU,
-                           background="#44546A", foreground="white")
-        label4.pack(ipadx=20, pady=5, side=tk.TOP, 
-                    fill=tk.BOTH,  anchor=tk.NW)
-        label1.bind("<Enter>", partial(self.color_config, label1, "#333F50"))
-        label1.bind("<Leave>", partial(self.color_config, label1, "#44546A"))
+
+        menuitems = {
+            "DASHBOARD": None,
+            "SCORING": None,
+            "STATISTICS": None,
+            "SETTINGS": None,
+        }
+        for menuitem in menuitems:
+            MenuItem(self, menuitem)
 
     def color_config(self, widget, color, event):
         widget.configure(background=color)
 
-class Scoring2(tk.LabelFrame):
-    def __init__(self, parent, *args, **kwargs) -> None:
-        super().__init__(parent, *args, **kwargs)
+
+class MenuItem():
+    def __init__(self, parent, label_text: str) -> None:
+        self.label = tk.Label(parent, text=label_text, font=FONT_MENU,
+                              background="#44546A", foreground="white",
+                              anchor="w", padx=20, pady=10)
+        self.label.pack(side=tk.TOP, fill=tk.BOTH,  anchor=tk.NW)
+        self.label.bind("<Enter>", lambda event=None:
+                        self.color_config(self.label, "#333F50"))
+        self.label.bind("<Leave>", lambda event=None:
+                        self.color_config(self.label, "#44546A"))
+        self.label.bind("<Button-1>", lambda event=None:
+                        self.go_to_page())
+
+    def color_config(self, widget, color: str) -> None:
+        widget.configure(background=color)
+
+    def go_to_page(self):
+        print("Go to page")
+        pass
 
 
 class Scoring(ttk.Frame):
