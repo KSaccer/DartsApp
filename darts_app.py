@@ -3,7 +3,6 @@ import tkinter.ttk as ttk
 from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
-from functools import partial
 
 from database import DataBase
 
@@ -24,6 +23,8 @@ class Game():
 class DartsApp(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+        # Main Congif
         self.rowconfigure(0, weight=1)
         self.columnconfigure((0, 1), weight=1)
         self.title("Darts Scoring App")
@@ -31,19 +32,37 @@ class DartsApp(tk.Tk):
         self.geometry("1000x600")
         self.resizable(False, False)
         self.option_add("*Font", FONT_DEFAULT)
+        self.protocol("WM_DELETE_WINDOW", self.close_app)
 
-        self.scoring = Scoring(self)
-        self.scoring.grid(row=0, column=1, sticky="news")
-
+        # Pages
         self.dashboard = Dashboard(self)
         self.dashboard.grid(row=0, column=1, sticky="news")
+        self.scoring = Scoring(self)
+        self.scoring.grid(row=0, column=1, sticky="news")
+        self.statpage = StatPage(self)
+        self.statpage.grid(row=0, column=1, sticky="news")
+        self.settings = Settings(self)
+        self.settings.grid(row=0, column=1, sticky="news")
 
+        # Side Menu
         menu_style = ttk.Style()
         menu_style.configure("Menu.TFrame", background="#44546A")
         self.menu = Menu(self, style="Menu.TFrame")
         self.menu.grid(row=0, column=0, sticky="news")
 
+        # Run
         self.mainloop()
+
+    def close_app(self) -> None:
+        really_quit = messagebox.askokcancel(
+            "Confirmation",
+            "Do you really want to close the application?",
+            )
+
+        if really_quit:
+            self.destroy()
+        else:
+            pass
 
 
 class Menu(ttk.Frame):
@@ -54,21 +73,22 @@ class Menu(ttk.Frame):
         menuitems = {
             "DASHBOARD": self.parent.dashboard,
             "SCORING": self.parent.scoring,
-            "STATISTICS": None,
-            "SETTINGS": None,
+            "STATISTICS": self.parent.statpage,
+            "SETTINGS": self.parent.settings,
+            "QUIT": None,
         }
         tk.Label(self, text="", background="#44546A", padx=20, pady=10).pack()
         for item in menuitems:
-            label = tk.Label(self, text=item, font=FONT_MENU, 
+            label = tk.Label(self, text=item, font=FONT_MENU,
                              background="#44546A", foreground="white",
                              anchor="w", padx=20, pady=10)
             label.pack(side=tk.TOP, fill=tk.BOTH, anchor=tk.NW)
             self.create_bindings(label, menuitems[item])
 
-    def color_config(self, widget, color):
+    def color_config(self, widget, color: str) -> None:
         widget.configure(background=color)
 
-    def create_bindings(self, widget, page):
+    def create_bindings(self, widget, page: ttk.Frame) -> None:
         widget.bind("<Enter>", lambda event=None:
                     self.color_config(widget, "#333F50"))
         widget.bind("<Leave>", lambda event=None:
@@ -76,8 +96,11 @@ class Menu(ttk.Frame):
         widget.bind("<Button-1>", lambda event=None:
                     self.go_to_page(page))
 
-    def go_to_page(self, page):
-        page.tkraise()
+    def go_to_page(self, page: ttk.Frame) -> None:
+        if page:
+            page.tkraise()
+        else:
+            self.parent.close_app()
 
 
 class Dashboard(ttk.Frame):
@@ -86,6 +109,24 @@ class Dashboard(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         tk.Label(self, text="DASHBOARD", background="lightsteelblue").grid(
+            row=0, column=0, sticky="news")
+
+
+class StatPage(ttk.Frame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        tk.Label(self, text="STATISTICS", background="lightsteelblue").grid(
+            row=0, column=0, sticky="news")
+
+
+class Settings(ttk.Frame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        tk.Label(self, text="SETTINGS", background="lightsteelblue").grid(
             row=0, column=0, sticky="news")
 
 
