@@ -24,19 +24,24 @@ class Game():
 class DartsApp(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure((0, 1), weight=1)
         self.title("Darts Scoring App")
         self.iconbitmap(default="pics/dartboard.ico")
         self.geometry("1000x600")
         self.resizable(False, False)
         self.option_add("*Font", FONT_DEFAULT)
 
+        self.scoring = Scoring(self)
+        self.scoring.grid(row=0, column=1, sticky="news")
+
+        self.dashboard = Dashboard(self)
+        self.dashboard.grid(row=0, column=1, sticky="news")
+
         menu_style = ttk.Style()
         menu_style.configure("Menu.TFrame", background="#44546A")
         self.menu = Menu(self, style="Menu.TFrame")
-        self.menu.pack(ipadx=20, side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        self.scoring = Scoring(self)
-        self.scoring.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        self.menu.grid(row=0, column=0, sticky="news")
 
         self.mainloop()
 
@@ -44,39 +49,44 @@ class DartsApp(tk.Tk):
 class Menu(ttk.Frame):
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
+        self.parent = parent
 
         menuitems = {
-            "DASHBOARD": None,
-            "SCORING": None,
+            "DASHBOARD": self.parent.dashboard,
+            "SCORING": self.parent.scoring,
             "STATISTICS": None,
             "SETTINGS": None,
         }
-        for menuitem in menuitems:
-            MenuItem(self, menuitem)
+        tk.Label(self, text="", background="#44546A", padx=20, pady=10).pack()
+        for item in menuitems:
+            label = tk.Label(self, text=item, font=FONT_MENU, 
+                             background="#44546A", foreground="white",
+                             anchor="w", padx=20, pady=10)
+            label.pack(side=tk.TOP, fill=tk.BOTH, anchor=tk.NW)
+            self.create_bindings(label, menuitems[item])
 
-    def color_config(self, widget, color, event):
+    def color_config(self, widget, color):
         widget.configure(background=color)
 
+    def create_bindings(self, widget, page):
+        widget.bind("<Enter>", lambda event=None:
+                    self.color_config(widget, "#333F50"))
+        widget.bind("<Leave>", lambda event=None:
+                    self.color_config(widget, "#44546A"))
+        widget.bind("<Button-1>", lambda event=None:
+                    self.go_to_page(page))
 
-class MenuItem():
-    def __init__(self, parent, label_text: str) -> None:
-        self.label = tk.Label(parent, text=label_text, font=FONT_MENU,
-                              background="#44546A", foreground="white",
-                              anchor="w", padx=20, pady=10)
-        self.label.pack(side=tk.TOP, fill=tk.BOTH,  anchor=tk.NW)
-        self.label.bind("<Enter>", lambda event=None:
-                        self.color_config(self.label, "#333F50"))
-        self.label.bind("<Leave>", lambda event=None:
-                        self.color_config(self.label, "#44546A"))
-        self.label.bind("<Button-1>", lambda event=None:
-                        self.go_to_page())
+    def go_to_page(self, page):
+        page.tkraise()
 
-    def color_config(self, widget, color: str) -> None:
-        widget.configure(background=color)
 
-    def go_to_page(self):
-        print("Go to page")
-        pass
+class Dashboard(ttk.Frame):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        tk.Label(self, text="DASHBOARD", background="lightsteelblue").grid(
+            row=0, column=0, sticky="news")
 
 
 class Scoring(ttk.Frame):
