@@ -1,10 +1,13 @@
 import sqlite3
-from datetime import datetime
+import os
 
-SQL_SCRIPT_PATH = "db_initialize.sql"
-
+SQL_SCRIPT_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), 
+    "sql", 
+    "db_initialize.sql")
 
 class DataBase():
+
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
         db_conn = self.create_connection()
