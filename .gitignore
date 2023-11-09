@@ -1,4 +1,7 @@
 /__pycache__
+/pages/__pycache__/
+/db/__pycache__/
 /.venv
 /scratch.py
 darts_data.db
+

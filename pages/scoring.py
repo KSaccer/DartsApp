@@ -35,7 +35,7 @@ class Scoring(ttk.Frame):
         self.game = Game(self.db.last_game_id + 1)
         # populating widgets
         self.create_gui()
-        # run
+        # make first throw entry active
         self.score_entry_block.throw_1.value.focus_set()
 
     def create_gui(self) -> None:
@@ -213,13 +213,14 @@ class ButtonsFrame(ttk.LabelFrame):
         finish_button.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
-    def restart(self) -> None:
+    def restart(self, response=False) -> None:
         """Reset session - clear statistics and table records"""
 
-        response = messagebox.askokcancel(
-            "Confirmation",
-            "Do you really want to restart the session?\n"
-            "Scores and statistics will be discarded!")
+        if not response:
+            response = messagebox.askokcancel(
+                "Confirmation",
+                "Do you really want to restart the session?\n"
+                "Scores and statistics will be discarded!")
 
         if response:
             self.parent.statistics.reset()
@@ -245,7 +246,10 @@ class ButtonsFrame(ttk.LabelFrame):
         for value in self.parent.throw_history.get_records():
             throw_data = tuple(value[1:-1])
             self.parent.db.insert_data(throw_data)
-        self.parent.destroy()
+        
+        # Start new game
+        self.restart(response=True)
+        self.parent.game.game_id += 1
 
 
 class ThrowHistory(ttk.LabelFrame):
