@@ -238,13 +238,14 @@ class ButtonsFrame(ttk.LabelFrame):
             game_data = (
                 self.parent.game.game_id,
                 self.parent.game.start,
+                self.parent.game.end,
                 self.parent.game.game_type
                 )
             self.parent.db.insert_game(game_data)
 
         # Insert throws
         for value in self.parent.throw_history.get_records():
-            throw_data = tuple(value[1:-1])
+            throw_data = tuple(value[1::])
             self.parent.db.insert_data(throw_data)
         
         # Start new game
@@ -287,12 +288,11 @@ class ThrowHistory(ttk.LabelFrame):
         scrollbar.grid(row=0, column=1, sticky='ns')
 
     def add_record(self, record: tuple) -> None:
-        ts = datetime.timestamp(datetime.now())
         if self.items:
             last_id = int(self.throw_history.item(self.items[-1])["values"][0])
         else:
             last_id = 0
-        values = [last_id + 1] + [ts] + [*record]
+        values = [last_id + 1] + [*record]
         self.throw_history.insert("", tk.END, values=values)
         self.items = self.throw_history.get_children()
 
