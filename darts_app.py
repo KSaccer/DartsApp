@@ -65,7 +65,7 @@ class DartsApp(tk.Tk):
             )
 
         if really_quit:
-            self.destroy()
+            self.quit()
         else:
             pass
 

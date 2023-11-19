@@ -59,6 +59,7 @@ class PlotSelector(ttk.Frame):
         plot_type["values"] = ["Averages", "Nr of Sessions"]
         plot_type["state"] = "readonly"
         plot_type.grid(row=0, column=1, sticky="w")
+        plot_type.current(0)
 
         time_scale_label = ttk.Label(self, text="Plot Type: ")
         time_scale_label.grid(row=0, column=2, sticky="e")
@@ -67,6 +68,7 @@ class PlotSelector(ttk.Frame):
         time_scale["values"] = ["Monthly", "Yearly"]
         time_scale["state"] = "readonly"
         time_scale.grid(row=0, column=3, sticky="w")
+        time_scale.current(0)
 
 
 class Plot(ttk.Frame):
@@ -80,8 +82,7 @@ class Plot(ttk.Frame):
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     def create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
-        """Connect to database and run SQL query.
-           Return a pandas DataFrame"""
+        """Connect to database and run SQL query"""
         conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
             df = pd.read_sql_query(query.read(), conn)

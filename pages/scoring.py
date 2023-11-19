@@ -262,7 +262,6 @@ class ThrowHistory(ttk.LabelFrame):
 
         columns = {
             "id": ("ID", True),
-            "timestep": ("Timestep", False),
             "throw_1": ("1st Throw", True),
             "throw_2": ("2nd Throw", True),
             "throw_3": ("3rd Throw", True),
