@@ -44,7 +44,7 @@ class DartsApp(tk.Tk):
         self.dashboard.grid(row=0, column=1, sticky="news")
         self.scoring = Scoring(self, self.db)
         self.scoring.grid(row=0, column=1, sticky="news")
-        self.statpage = StatPage(self)
+        self.statpage = StatPage(self, self.db)
         self.statpage.grid(row=0, column=1, sticky="news")
         self.settings = Settings(self)
         self.settings.grid(row=0, column=1, sticky="news")
