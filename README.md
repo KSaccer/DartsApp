@@ -7,3 +7,4 @@ This is an ongoing pet project, where the focus is on learning the language and 
 
 ## App interface
 ![app_screenshot](pics/screenshot.PNG "App interface")
+![app_screenshot](pics/screenshot2.PNG "App interface")
