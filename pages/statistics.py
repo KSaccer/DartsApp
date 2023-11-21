@@ -49,26 +49,35 @@ class PageTitle(ttk.Frame):
 class PlotSelector(ttk.Frame):
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
+        self.parent = parent
         self.rowconfigure(0, weight=1)
         self.columnconfigure((0, 1, 2, 3), weight=1)
 
         plot_type_label = ttk.Label(self, text="Plot Type: ")
         plot_type_label.grid(row=0, column=0, sticky="e")
 
-        plot_type = ttk.Combobox(self)
-        plot_type["values"] = ["Averages", "Nr of Sessions"]
-        plot_type["state"] = "readonly"
-        plot_type.grid(row=0, column=1, sticky="w")
-        plot_type.current(0)
+        self.plot_type = ttk.Combobox(self)
+        self.plot_type["values"] = ["Averages", "Nr of Sessions"]
+        self.plot_type["state"] = "readonly"
+        self.plot_type.grid(row=0, column=1, sticky="w")
+        self.plot_type.current(0)
 
-        time_scale_label = ttk.Label(self, text="Plot Type: ")
+        time_scale_label = ttk.Label(self, text="Time Scale: ")
         time_scale_label.grid(row=0, column=2, sticky="e")
 
-        time_scale = ttk.Combobox(self)
-        time_scale["values"] = ["Monthly", "Yearly"]
-        time_scale["state"] = "readonly"
-        time_scale.grid(row=0, column=3, sticky="w")
-        time_scale.current(0)
+        self.time_scale = ttk.Combobox(self)
+        self.time_scale["values"] = ["Monthly", "Yearly"]
+        self.time_scale["state"] = "readonly"
+        self.time_scale.grid(row=0, column=3, sticky="w")
+        self.time_scale.current(0)
+
+        self.create_bindings()
+
+    def create_bindings(self) -> None:
+        self.time_scale.bind("<<ComboboxSelected>>", lambda event=None: 
+                             self.parent.plot.update_plot(self.time_scale.get()))
+
+    
 
 
 class Plot(ttk.Frame):
@@ -76,32 +85,36 @@ class Plot(ttk.Frame):
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self.fig = self.create_plot()
-        canvas = FigureCanvasTkAgg(self.fig, master=self)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.df = self.create_df(self.parent.db, SQL_SCRIPT)
+        self.fig, self.ax = self.create_plot(self.df)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(padx=10, pady=10, 
+                                    side=tk.TOP, fill=tk.BOTH, expand=True)
 
     def create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
         """Connect to database and run SQL query"""
         conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn)
+            df = pd.read_sql_query(query.read(), conn, 
+                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        df = df.set_index("date")
+        df = df.resample("M").sum()
         conn.close()
         return df
-
-    def create_plot(self) -> Figure:
-        df = self.create_df(self.parent.db, SQL_SCRIPT)
-        df["month"] = pd.to_datetime(df["month"], format="%Y-%m")
+    
+    def create_plot(self, df: pd.DataFrame) -> Figure:
+        """Create plot"""
         # Figure setup
-        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
-        sns.set_theme(style="whitegrid")
+        fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plots
-        sns.lineplot(x=df.month, y=df.average, color="tab:blue", marker='o', ax=ax)
+        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+                          color="tab:blue", marker='o', ax=ax)
         # Formatting
         years, months  = mdates.YearLocator(), mdates.MonthLocator()   # every year
-        years_format, months_format = mdates.DateFormatter('%Y'), mdates.DateFormatter('%m')
-        ax.set(title="Monthly Average", xlabel="Date", ylabel="3-Dart Average")
+        years_format = mdates.DateFormatter('%Y')
+        months_format = mdates.DateFormatter('%m')
         ax.set_axisbelow(True)
         ax.xaxis.grid(color='gray', linestyle='dashed')
         ax.yaxis.grid(color='gray', linestyle='dashed')
@@ -111,7 +124,16 @@ class Plot(ttk.Frame):
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
-        return fig
+
+        return fig, ax
+    
+    def update_plot(self, settings: str) -> None: 
+        # resample df
+        df = self.parent.plot.df.resample(settings[0]).sum() # Yearly -> Y / Monthly -> M
+        new_fig, new_ax = self.create_plot(df)
+        new_fig.set_size_inches(self.fig.get_size_inches())
+        self.canvas.figure = new_fig
+        self.canvas.draw()
 
         
 if __name__ == "__main__":
