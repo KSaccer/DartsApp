@@ -39,7 +39,7 @@ class DataBase():
         db_conn = sqlite3.connect(self.db_path)
         cursor = db_conn.cursor()
         cursor.execute(
-            "INSERT INTO games VALUES (?, ?, ?)",
+            "INSERT INTO games VALUES (?, ?, ?, ?)",
             (*record, )
             )
         db_conn.commit()
