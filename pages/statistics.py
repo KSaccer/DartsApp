@@ -7,7 +7,8 @@ import seaborn as sns
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, Axes
+from typing import Self
 
 
 FONT_TITLE = ("Arial", 20, "bold")
@@ -34,8 +35,8 @@ class StatPage(ttk.Frame):
         self.plot_selector = PlotSelector(self)
         self.plot_selector.grid(row=1, column=0, sticky="news")
 
-        self.plot = Plot(self)
-        self.plot.grid(row=2, column=0, sticky="news")
+        self.plot_canvas = PlotCanvas(self)
+        self.plot_canvas.grid(row=2, column=0, sticky="news")
         
 
 class PageTitle(ttk.Frame):
@@ -73,26 +74,51 @@ class PlotSelector(ttk.Frame):
 
         self.create_bindings()
 
+    def update_plot(self, event) -> None:
+        """Resample plot and update the canvas"""
+        sampling_rule = self.time_scale.get()[0]
+        new_plot = self.parent.plot_canvas.plot.resample_plot(sampling_rule)
+        self.parent.plot_canvas.add_plot(new_plot)
+
     def create_bindings(self) -> None:
-        self.time_scale.bind("<<ComboboxSelected>>", lambda event=None: 
-                             self.parent.plot.update_plot(self.time_scale.get()))
-
-    
+        self.time_scale.bind("<<ComboboxSelected>>", self.update_plot)
 
 
-class Plot(ttk.Frame):
+class PlotCanvas(ttk.Frame):
     
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        self.df = self.create_df(self.parent.db, SQL_SCRIPT)
-        self.fig, self.ax = self.create_plot(self.df)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack(padx=10, pady=10, 
+        self.canvas = self._create_canvas()
+        self.plot = Plot(self.parent.db, SQL_SCRIPT)
+        self.add_plot(self.plot)
+        # self.plot_size = self.plot.fig.get_size_inches()
+        
+    def _create_canvas(self) -> FigureCanvasTkAgg:
+        """Create canvas widget with matplotlib backend"""
+        canvas = FigureCanvasTkAgg(None, master=self)
+        canvas.get_tk_widget().pack(padx=10, pady=10, 
                                     side=tk.TOP, fill=tk.BOTH, expand=True)
+        return canvas
+        
+    def add_plot(self, plot: "Plot") -> None:
+        """Add Figure to canvas"""
+        fig_size = self.canvas.figure.get_size_inches()
+        self.canvas.figure.clear()
+        self.canvas.draw()
+        plot.fig.set_size_inches(fig_size)
+        self.canvas.figure = plot.fig
+        self.canvas.draw()
+        
 
-    def create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
+class Plot():
+
+    def __init__(self, db: "Database", sql_script: str) -> None:
+        self._df = self._create_df(db, sql_script)
+        self.fig, self.ax = self._create_plot(self._df)
+        self.fig_size = self.fig.get_size_inches()
+
+    def _create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
         """Connect to database and run SQL query"""
         conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
@@ -103,7 +129,7 @@ class Plot(ttk.Frame):
         conn.close()
         return df
     
-    def create_plot(self, df: pd.DataFrame) -> Figure:
+    def _create_plot(self, df: pd.DataFrame) -> (Figure, Axes):
         """Create plot"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -127,13 +153,12 @@ class Plot(ttk.Frame):
 
         return fig, ax
     
-    def update_plot(self, settings: str) -> None: 
-        # resample df
-        df = self.parent.plot.df.resample(settings[0]).sum() # Yearly -> Y / Monthly -> M
-        new_fig, new_ax = self.create_plot(df)
-        new_fig.set_size_inches(self.fig.get_size_inches())
-        self.canvas.figure = new_fig
-        self.canvas.draw()
+    def resample_plot(self, sampling_rule: str) -> Self: 
+        """Resample time axis of plot (yearly / monthly)"""
+        df = self._df.resample(sampling_rule).sum()
+        self.fig, self.ax = self._create_plot(df)
+        self.fig.set_size_inches(self.fig_size)
+        return self
 
         
 if __name__ == "__main__":
