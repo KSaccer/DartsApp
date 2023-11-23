@@ -14,10 +14,15 @@ from typing import Self
 FONT_TITLE = ("Arial", 20, "bold")
 FONT_DEFAULT = ("Arial", 10)
 
-SQL_SCRIPT = os.path.join(
+SQL_SCRIPT_AVG = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 
     "sql", 
     "avg.sql")
+
+SQL_SCRIPT_NR_OF_SESSIONS = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), 
+    "sql", 
+    "nr_of_games.sql")
 
 
 class StatPage(ttk.Frame):
@@ -74,14 +79,26 @@ class PlotSelector(ttk.Frame):
 
         self.create_bindings()
 
-    def update_plot(self, event) -> None:
+    def update_time_scale(self, event) -> None:
         """Resample plot and update the canvas"""
         sampling_rule = self.time_scale.get()[0]
         new_plot = self.parent.plot_canvas.plot.resample_plot(sampling_rule)
         self.parent.plot_canvas.add_plot(new_plot)
 
+    def update_plot_type(self, event) -> None:
+        plot_type = self.plot_type.get()
+        sampling_rule = self.time_scale.get()[0]
+        if plot_type == "Averages":
+            sql_script = SQL_SCRIPT_AVG
+        else:
+            sql_script = SQL_SCRIPT_NR_OF_SESSIONS
+        new_plot = Plot(self.parent.db, sql_script, plot_type)
+        new_plot.resample_plot(sampling_rule)
+        self.parent.plot_canvas.add_plot(new_plot)
+
     def create_bindings(self) -> None:
-        self.time_scale.bind("<<ComboboxSelected>>", self.update_plot)
+        self.time_scale.bind("<<ComboboxSelected>>", self.update_time_scale)
+        self.plot_type.bind("<<ComboboxSelected>>", self.update_plot_type)
 
 
 class PlotCanvas(ttk.Frame):
@@ -90,7 +107,7 @@ class PlotCanvas(ttk.Frame):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.canvas = self._create_canvas()
-        self.plot = Plot(self.parent.db, SQL_SCRIPT)
+        self.plot = Plot(self.parent.db, SQL_SCRIPT_AVG, "Averages")
         self.add_plot(self.plot)
         # self.plot_size = self.plot.fig.get_size_inches()
         
@@ -109,12 +126,14 @@ class PlotCanvas(ttk.Frame):
         plot.fig.set_size_inches(fig_size)
         self.canvas.figure = plot.fig
         self.canvas.draw()
+        self.plot = plot
         
 
 class Plot():
 
-    def __init__(self, db: "Database", sql_script: str) -> None:
+    def __init__(self, db: "Database", sql_script: str, plot_type: str) -> None:
         self._df = self._create_df(db, sql_script)
+        self.plot_type = plot_type
         self.fig, self.ax = self._create_plot(self._df)
         self.fig_size = self.fig.get_size_inches()
 
@@ -135,8 +154,12 @@ class Plot():
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plots
-        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
-                          color="tab:blue", marker='o', ax=ax)
+        if self.plot_type == "Averages":
+            sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+                            color="tab:blue", marker='o', ax=ax)
+        elif self.plot_type == "Nr of Sessions":
+            ax.bar(df.index, df.nr_of_games, width=15, 
+                   color="tab:blue",  edgecolor='black')
         # Formatting
         years, months  = mdates.YearLocator(), mdates.MonthLocator()   # every year
         years_format = mdates.DateFormatter('%Y')
