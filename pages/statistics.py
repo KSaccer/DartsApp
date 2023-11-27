@@ -155,8 +155,16 @@ class Plot():
         fig.tight_layout(h_pad=5)
         # Creating plots
         if self.plot_type == "Averages":
-            sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+            sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
                             color="tab:blue", marker='o', ax=ax)
+            sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+                            color="lightgray", ax=ax)
+            ax.lines[0].set_linestyle("--")
+            df_smooth = df.resample("D").interpolate(method="quadratic")
+            sns.lineplot(x=df_smooth.index, 
+                         y=df_smooth.overall_score / df_smooth.visits, 
+                         color="tab:orange", ax=ax
+                         )
         elif self.plot_type == "Nr of Sessions":
             ax.bar(df.index, df.nr_of_games, width=15, 
                    color="tab:blue",  edgecolor='black')
@@ -165,8 +173,8 @@ class Plot():
         years_format = mdates.DateFormatter('%Y')
         months_format = mdates.DateFormatter('%m')
         ax.set_axisbelow(True)
-        ax.xaxis.grid(color='gray', linestyle='dashed')
-        ax.yaxis.grid(color='gray', linestyle='dashed')
+        ax.xaxis.grid(color='lightgray', linestyle='dashed')
+        ax.yaxis.grid(color='lightgray', linestyle='dashed')
         ax.xaxis.set_major_locator(years)
         ax.xaxis.set_major_formatter(years_format)
         ax.xaxis.set_minor_locator(months)
