@@ -10,5 +10,9 @@ class Settings(ttk.Frame):
         tk.Label(self, text="SETTINGS", background="lightsteelblue").grid(
             row=0, column=0, sticky="news")
         
+    def create_gui(self):
+        pass
+    
+        
 if __name__ == "__main__":
     pass

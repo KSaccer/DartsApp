@@ -48,6 +48,7 @@ class DartsApp(tk.Tk):
         self.statpage.grid(row=0, column=1, sticky="news")
         self.settings = Settings(self)
         self.settings.grid(row=0, column=1, sticky="news")
+        self.dashboard.tkraise()
 
         # Side Menu
         menu_style = ttk.Style()
@@ -108,6 +109,7 @@ class Sidebar(ttk.Frame):
         """Show the main frame of the given page.
         If page is None (Quit button), call the close_app function"""
         if page:
+            page.create_gui()
             page.tkraise()
         else:
             self.parent.close_app()

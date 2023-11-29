@@ -31,17 +31,18 @@ class StatPage(ttk.Frame):
         self.db = db
         self.rowconfigure((0, 1, 2), weight=1)
         self.columnconfigure(0, weight=1)
-        self.create_gui()
     
     def create_gui(self) -> None:
         self.page_title = PageTitle(self)
-        self.page_title.grid(row=0, column=0)
+        self.page_title.grid(row=0, column=0, sticky="n")
         
-        self.plot_selector = PlotSelector(self)
-        self.plot_selector.grid(row=1, column=0, sticky="news")
+        if self.db.last_game_id > 0:
+            self.plot_selector = PlotSelector(self)
+            self.plot_selector.grid(row=1, column=0, sticky="news")
 
-        self.plot_canvas = PlotCanvas(self)
-        self.plot_canvas.grid(row=2, column=0, sticky="news")
+            self.plot_canvas = PlotCanvas(self)
+            self.plot_canvas.grid(row=2, column=0, sticky="news")
+        # self._created = True
         
 
 class PageTitle(ttk.Frame):
@@ -49,7 +50,7 @@ class PageTitle(ttk.Frame):
         super().__init__(parent, *args, **kwargs)
         label = ttk.Label(self, text="Darts Practice Statistics",
                           font=FONT_TITLE)
-        label.pack(expand=True, fill="both")
+        label.pack(expand=True, fill="both", pady=10)
 
 
 class PlotSelector(ttk.Frame):
@@ -84,6 +85,7 @@ class PlotSelector(ttk.Frame):
         sampling_rule = self.time_scale.get()[0]
         new_plot = self.parent.plot_canvas.plot.resample_plot(sampling_rule)
         self.parent.plot_canvas.add_plot(new_plot)
+        self.parent.plot_canvas.canvas.draw()
 
     def update_plot_type(self, event) -> None:
         plot_type = self.plot_type.get()
@@ -95,6 +97,7 @@ class PlotSelector(ttk.Frame):
         new_plot = Plot(self.parent.db, sql_script, plot_type)
         new_plot.resample_plot(sampling_rule)
         self.parent.plot_canvas.add_plot(new_plot)
+        self.parent.plot_canvas.canvas.draw()
 
     def create_bindings(self) -> None:
         self.time_scale.bind("<<ComboboxSelected>>", self.update_time_scale)
@@ -108,8 +111,8 @@ class PlotCanvas(ttk.Frame):
         self.parent = parent
         self.canvas = self._create_canvas()
         self.plot = Plot(self.parent.db, SQL_SCRIPT_AVG, "Averages")
-        self.add_plot(self.plot)
-        # self.plot_size = self.plot.fig.get_size_inches()
+        if self.plot.fig:
+            self.add_plot(self.plot)
         
     def _create_canvas(self) -> FigureCanvasTkAgg:
         """Create canvas widget with matplotlib backend"""
@@ -122,10 +125,10 @@ class PlotCanvas(ttk.Frame):
         """Add Figure to canvas"""
         fig_size = self.canvas.figure.get_size_inches()
         self.canvas.figure.clear()
-        self.canvas.draw()
+        # self.canvas.draw()
         plot.fig.set_size_inches(fig_size)
         self.canvas.figure = plot.fig
-        self.canvas.draw()
+        # self.canvas.draw()
         self.plot = plot
         
 
@@ -134,8 +137,10 @@ class Plot():
     def __init__(self, db: "Database", sql_script: str, plot_type: str) -> None:
         self._df = self._create_df(db, sql_script)
         self.plot_type = plot_type
-        self.fig, self.ax = self._create_plot(self._df)
-        self.fig_size = self.fig.get_size_inches()
+        self.fig = None
+        if not self._df.empty:
+            self.fig, self.ax = self._create_plot(self._df)
+            self.fig_size = self.fig.get_size_inches()
 
     def _create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
         """Connect to database and run SQL query"""

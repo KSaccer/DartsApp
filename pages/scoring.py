@@ -28,6 +28,7 @@ class Scoring(ttk.Frame):
         self.rowconfigure(2, weight=3)
         self.rowconfigure(3, weight=1)
         self.columnconfigure((0, 1), weight=1)
+        self._created = False
 
         # Initialize database
         self.db = db
@@ -35,10 +36,10 @@ class Scoring(ttk.Frame):
         self.game = Game(self.db.last_game_id + 1)
         # populating widgets
         self.create_gui()
-        # make first throw entry active
-        self.score_entry_block.throw_1.value.focus_set()
 
     def create_gui(self) -> None:
+        if self._created:
+            return
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, columnspan=2)
 
@@ -56,6 +57,8 @@ class Scoring(ttk.Frame):
         self.throw_history = ThrowHistory(self, text="Throw History")
         self.throw_history.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
+        
+        self._created = True
 
 
 class PageTitle(ttk.Frame):
