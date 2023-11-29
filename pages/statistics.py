@@ -167,7 +167,7 @@ class Plot():
                          )
         elif self.plot_type == "Nr of Sessions":
             ax.bar(df.index, df.nr_of_games, width=15, 
-                   color="tab:blue",  edgecolor='black')
+                   color="tab:blue",  edgecolor='darkblue')
         # Formatting
         years, months  = mdates.YearLocator(), mdates.MonthLocator()   # every year
         years_format = mdates.DateFormatter('%Y')
