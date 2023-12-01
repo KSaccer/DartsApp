@@ -11,3 +11,4 @@ db/data_generation.py
 db/darts_data.db.bkp
 db/darts_data_REAL.db
 db/darts_data_test.db
+db/darts_data_TO_DEBUG.db

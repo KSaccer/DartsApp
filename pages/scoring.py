@@ -279,7 +279,7 @@ class ThrowHistory(ttk.LabelFrame):
                                 sticky="ns")
 
         # Column config
-        self.throw_history['show'] = 'headings'
+        self.throw_history["show"] = "headings"
         self.throw_history["displaycolumns"] = [
             column for column in columns if columns[column][1]
             ]
@@ -292,6 +292,40 @@ class ThrowHistory(ttk.LabelFrame):
                                   command=self.throw_history.yview)
         self.throw_history.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='ns')
+
+        self.create_bindings()
+
+    def create_bindings(self) -> None:
+        """Bind callout functions to events"""
+        self.throw_history.bind("<Double-1>", self.edit_cell)
+        
+    def edit_cell(self, event, row=None, column=None) -> None:
+        """Open a PopupEntry field above the TreeView cell that was 
+        double-clicked on to edit the score. Header row, ID and SUM column
+        will be ignored and therefore not editable."""
+        
+        # Destroy existing popup, if there's one
+        try: 
+            self.entry_popup.destroy()
+        except AttributeError:
+            pass
+        
+        if not row:
+            row = self.throw_history.identify_row(event.y)
+        if not column:
+            column = self.throw_history.identify_column(event.x)
+        column_id = int(column[1:]) - 1
+
+        # Ignore header row and ID / SUM columns
+        if not row or column in {"#1", "#5"}:
+            return
+        
+        x, y, width, height = self.throw_history.bbox(row, column)
+        pady = height // 2
+
+        text = self.throw_history.item(row, "values")[column_id]
+        self.entry_popup = EntryPopup(self.throw_history, row, column_id, text)
+        self.entry_popup.place(x=x, y=y+pady, width=width, height=height, anchor="w")
 
     def add_record(self, record: tuple) -> None:
         """Add record to TreeView, update item list
@@ -314,3 +348,74 @@ class ThrowHistory(ttk.LabelFrame):
         """Yield data from TreevView line by line"""
         for item in self.items:
             yield self.throw_history.item(item)["values"]
+
+
+class EntryPopup(ttk.Entry):
+    """Widget to be placed over a cell in ThrowHistory TreeView
+    when it is selected via double click to be modified"""
+    def __init__(self, parent, row: str, column_id: int, text: str, **kwargs) -> None:
+        """Construct an EntryPopup widget"""
+        super().__init__(parent, **kwargs)
+        self.parent = parent
+        self.row = row
+        self.column_id = column_id
+        self.text = text
+
+        self.insert(0, self.text) 
+        self['exportselection'] = False
+        self.focus_force()
+        self.selection_range(0, 'end')
+
+        self.create_bindings()
+
+    def create_bindings(self) -> None:
+        """Bind callout functions to events"""
+        self.bind("<Return>", self.on_return)
+        self.bind("<Control-a>", lambda event: self.selection_range(0, 'end'))
+        self.bind("<Escape>", lambda event: self.destroy())
+        self.bind("<Tab>", lambda event: self.tab_pressed())
+        self.bind("<FocusOut>", lambda event: self.destroy())
+
+    def on_return(self, event) -> None:
+        """Update record in ThrowHistory with the new value"""
+        original_score = self.text
+        updated_score = self.get().upper()
+        if not updated_score:
+            return
+        # Convert to list, to support item assignment
+        orginal_values = list(self.parent.item(self.row, "values"))
+
+        # Update sum field
+        original_sum = orginal_values[-1]
+        updated_sum = (int(original_sum) 
+                       + self.convert_score(updated_score) 
+                       - self.convert_score(original_score))
+
+        # Update values        
+        updated_values = orginal_values
+        updated_values[self.column_id] = updated_score
+        updated_values[-1] = updated_sum
+
+        # Update record in ThrowHistory
+        self.parent.item(self.row, values=updated_values)
+        self.destroy()
+
+    @staticmethod
+    def convert_score(score: str) -> int:
+        """Convert score string to actual number.
+        For example T20 -> 60 or D5 -> 10 """
+        if score[0] == "D":
+            converted_score = int(score[1:]) * 2
+        elif score[0] == "T":
+            converted_score = int(score[1:]) * 3
+        else:
+            converted_score = int(score)
+        return converted_score
+    
+    def tab_pressed(self) -> None:
+        """Create the next EntryPopup when tab is pressed"""
+        self.on_return(event=None)
+        if self.column_id != 3:
+            self.parent.master.edit_cell(event=None, row=self.row, 
+                                         column=f"#{self.column_id + 2}")
+        
