@@ -23,7 +23,10 @@ DB_PATH = os.path.join(
 
 
 class DartsApp(tk.Tk):
+    """Main application class"""
+
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize main application class"""
         super().__init__(*args, **kwargs)
 
         # Main Congif
@@ -72,11 +75,11 @@ class DartsApp(tk.Tk):
         self.mainloop()
 
     def close_app(self) -> None:
+        """Show messagebox to confirm to quit, then close application"""
         really_quit = messagebox.askokcancel(
             "Confirmation",
             "Do you really want to close the application?",
             )
-
         if really_quit:
             self.quit()
         else:
@@ -123,7 +126,6 @@ class Sidebar(ttk.Frame):
             submenu.grid()
             submenu.visible = True
 
-
     def menu_clicked(self, reference: tk.Widget) -> None:
         """Assign the corresponding callback function to the widget.
         The widget is a main menu element: call go_to_page
@@ -135,6 +137,8 @@ class Sidebar(ttk.Frame):
 
 
 class Menu(Sidebar):
+    """Class for menu elements"""
+
     def __init__(self, parent, items: dict, *args, **kwargs) -> None:
         """Construct Menu widget"""
         super().__init__(parent, *args, **kwargs)
@@ -172,13 +176,15 @@ class Menu(Sidebar):
 
 
 class Submenu(Sidebar):
+    """Class for submenu elements that are shown when clicking 
+    on a main menu element that has further menu options"""
+
     def __init__(self, parent, items: dict, *args, **kwargs) -> None:
         """Construct Submenu widget"""
         super().__init__(parent, *args, **kwargs)
         self.items = items
         self._build_menu()
         self.visible = False
-
 
     def _build_menu(self) -> None:
         """Construct submenu widgets, create bindings"""

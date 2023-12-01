@@ -204,7 +204,10 @@ class StatField():
 
 
 class ButtonsFrame(ttk.LabelFrame):
+    """Frame that serves as a container for the Finish and Restart buttons"""
+
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct Frame that contains the Finish and Restart buttons"""
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure(0, weight=1)
@@ -218,7 +221,6 @@ class ButtonsFrame(ttk.LabelFrame):
 
     def restart(self, response=False) -> None:
         """Reset session - clear statistics and table records"""
-
         if not response:
             response = messagebox.askokcancel(
                 "Confirmation",
@@ -234,7 +236,6 @@ class ButtonsFrame(ttk.LabelFrame):
 
     def finish(self) -> None:
         """Insert data into database and close application"""
-
         # Insert game
         if self.parent.game.start:
             self.parent.game.end = datetime.now()
@@ -257,7 +258,10 @@ class ButtonsFrame(ttk.LabelFrame):
 
 
 class ThrowHistory(ttk.LabelFrame):
+    """Class to show thrown scores in a tabular format"""
+
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct TrowHistory table to store thrown scores"""
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -290,6 +294,8 @@ class ThrowHistory(ttk.LabelFrame):
         scrollbar.grid(row=0, column=1, sticky='ns')
 
     def add_record(self, record: tuple) -> None:
+        """Add record to TreeView, update item list
+          and move scroll to bottom"""
         if self.items:
             last_id = int(self.throw_history.item(self.items[-1])["values"][0])
         else:
@@ -297,11 +303,14 @@ class ThrowHistory(ttk.LabelFrame):
         values = [last_id + 1] + [*record]
         self.throw_history.insert("", tk.END, values=values)
         self.items = self.throw_history.get_children()
+        self.throw_history.yview_moveto(1)
 
     def clear_table(self) -> None:
+        """Clear all entries from TreeView"""
         self.throw_history.delete(*self.items)
         self.items = []
 
     def get_records(self) -> Generator[str, None, None]:
+        """Yield data from TreevView line by line"""
         for item in self.items:
             yield self.throw_history.item(item)["values"]
