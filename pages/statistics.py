@@ -165,7 +165,10 @@ class Plot():
             sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
                             color="lightgray", ax=ax)
             ax.lines[0].set_linestyle("--")
-            df_smooth = df.resample("D").interpolate(method="quadratic")
+            try:
+                df_smooth = df.resample("D").interpolate(method="quadratic")
+            except ValueError:
+                df_smooth = df
             sns.lineplot(x=df_smooth.index, 
                          y=df_smooth.overall_score / df_smooth.visits, 
                          color="tab:orange", ax=ax
