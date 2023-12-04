@@ -115,21 +115,14 @@ class ScoreEntryBlock(ttk.LabelFrame):
 
         # 1. Get entried scores, populate table, clear entry fields
         throws = self.get_values()
-        throws_sum = 0
 
         # check if all entry fields are filled, if so, calculate sum
         if not all(throws):
             return
-        for throw in throws:
-            if throw.upper()[0] == "D":
-                throws_sum += int(throw[1:]) * 2
-            elif throw.upper()[0] == "T":
-                throws_sum += int(throw[1:]) * 3
-            else:
-                throws_sum += int(throw)
+        throws_sum = sum([throw[1] for throw in throws])
 
         # populate table with throw data
-        record = tuple([throw.upper() for throw in throws] + [throws_sum])
+        record = tuple([throw[0].upper() for throw in throws] + [throws_sum])
         self.parent.throw_history.add_record(record)
         self.clear_values()
 
@@ -157,9 +150,36 @@ class ScoreEntryBlock(ttk.LabelFrame):
 class ThrowEntry():
     def __init__(self, parent, label_text: str, row: int) -> None:
         self.label = ttk.Label(parent, text=label_text)
-        self.value = ttk.Entry(parent)
+        self.value = ScoreEntry(parent)
         self.label.grid(row=row, column=0, padx=10, pady=10)
         self.value.grid(row=row, column=1, padx=10, pady=10)
+
+
+class ScoreEntry(ttk.Entry):
+    """Entry field to enter thrown score with methods to 
+    validate and convert the score"""
+    def __init__(self, parent: tk.Widget, *args, **kwargs) -> None:
+        """Construct ScoreEntry widget on parent widget"""
+        super().__init__(parent, *args, **kwargs)
+
+    def validate(self):
+        pass
+
+    def get(self) -> tuple:
+        score = super().get().strip().upper()
+        """Get score string, convert it to int, return both as tuple,
+        or an empty tuple, when entry field is empty.
+        For example T20 -> ("T20", 60) or D5 -> ("D5", 10)"""
+        if not score:
+            return ()
+        
+        if score[0] == "D":
+            converted_score = int(score[1:]) * 2
+        elif score[0] == "T":
+            converted_score = int(score[1:]) * 3
+        else:
+            converted_score = int(score)
+        return (score, converted_score)
 
 
 class Statistics(ttk.LabelFrame):
@@ -350,7 +370,7 @@ class ThrowHistory(ttk.LabelFrame):
             yield self.throw_history.item(item)["values"]
 
 
-class EntryPopup(ttk.Entry):
+class EntryPopup(ScoreEntry):
     """Widget to be placed over a cell in ThrowHistory TreeView
     when it is selected via double click to be modified"""
     def __init__(self, parent, row: str, column_id: int, text: str, **kwargs) -> None:
@@ -359,9 +379,9 @@ class EntryPopup(ttk.Entry):
         self.parent = parent
         self.row = row
         self.column_id = column_id
-        self.text = text
-
-        self.insert(0, self.text) 
+        
+        self.insert(0, text) 
+        self.original_score = self.get()
         self['exportselection'] = False
         self.focus_force()
         self.selection_range(0, 'end')
@@ -378,39 +398,26 @@ class EntryPopup(ttk.Entry):
 
     def on_return(self, event) -> None:
         """Update record in ThrowHistory with the new value"""
-        original_score = self.text
-        updated_score = self.get().upper()
+        updated_score = self.get() 
         if not updated_score:
             return
         # Convert to list, to support item assignment
-        orginal_values = list(self.parent.item(self.row, "values"))
+        orginal_th_values = list(self.parent.item(self.row, "values"))
 
         # Update sum field
-        original_sum = orginal_values[-1]
+        original_sum = orginal_th_values[-1]
         updated_sum = (int(original_sum) 
-                       + self.convert_score(updated_score) 
-                       - self.convert_score(original_score))
+                       + updated_score[1] 
+                       - self.original_score[1])
 
         # Update values        
-        updated_values = orginal_values
-        updated_values[self.column_id] = updated_score
-        updated_values[-1] = updated_sum
+        updated_th_values = orginal_th_values
+        updated_th_values[self.column_id] = updated_score[0]
+        updated_th_values[-1] = updated_sum
 
         # Update record in ThrowHistory
-        self.parent.item(self.row, values=updated_values)
+        self.parent.item(self.row, values=updated_th_values)
         self.destroy()
-
-    @staticmethod
-    def convert_score(score: str) -> int:
-        """Convert score string to actual number.
-        For example T20 -> 60 or D5 -> 10 """
-        if score[0] == "D":
-            converted_score = int(score[1:]) * 2
-        elif score[0] == "T":
-            converted_score = int(score[1:]) * 3
-        else:
-            converted_score = int(score)
-        return converted_score
     
     def tab_pressed(self) -> None:
         """Create the next EntryPopup when tab is pressed"""
