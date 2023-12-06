@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+import re
 from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
@@ -78,16 +79,20 @@ class ScoreEntryBlock(ttk.LabelFrame):
         self.throw_1 = ThrowEntry(self, "1st Throw:", 0)
         self.throw_2 = ThrowEntry(self, "2nd Throw:", 1)
         self.throw_3 = ThrowEntry(self, "3rd Throw:", 2)
+        self.throw_entries = [self.throw_1, self.throw_2, self.throw_3]
+
         self.submit = ttk.Button(self, text="Submit",
                                  command=self.submit_data)
         self.submit.grid(row=3, column=0, columnspan=2, padx=10, pady=10,
                          sticky="news")
+        self.create_bindings()
+        
+    def create_bindings(self) -> None:
         self.throw_1.value.bind("<Return>", lambda event=None:
                                 self.throw_2.value.focus_set())
         self.throw_2.value.bind("<Return>", lambda event=None:
                                 self.throw_3.value.focus_set())
-        self.throw_3.value.bind("<Return>", lambda event=None:
-                                self.submit.invoke())
+        self.throw_3.value.bind("<Return>", self.submit_data)
 
     def clear_values(self) -> None:
         self.throw_1.value.delete(0, tk.END)
@@ -96,29 +101,34 @@ class ScoreEntryBlock(ttk.LabelFrame):
 
     def get_values(self) -> list:
         return [
-            self.throw_1.value.get(),
-            self.throw_2.value.get(),
-            self.throw_3.value.get()
+            self.throw_1.value.get_and_convert(),
+            self.throw_2.value.get_and_convert(),
+            self.throw_3.value.get_and_convert()
             ]
 
-    def submit_data(self) -> None:
+    def submit_data(self, *ignore) -> None:
         """
         0. Initialize Game.start time, if it's none
         1. Get entried scores, populate table, clear entry fields
         2. Update Statistics fields
         3. Set focus to throw_1 entry field
         """
+        # Release focus from last entry widget, when called by <Return>
+        # This way the entry will be validated, otherwise not
+        self.parent.focus()
 
         # 0. Initialize Game.start time, if it's none
         if not self.parent.game.start:
             self.parent.game.start = datetime.now()
-
+        # Check if entries are all valid
+        validities = [throw.value.validate(throw.value.get().strip()) 
+                      for throw in self.throw_entries]
+        if not all(validities):
+            self.throw_entries[validities.index(False)].value.focus()
+            return
+        
         # 1. Get entried scores, populate table, clear entry fields
         throws = self.get_values()
-
-        # check if all entry fields are filled, if so, calculate sum
-        if not all(throws):
-            return
         throws_sum = sum([throw[1] for throw in throws])
 
         # populate table with throw data
@@ -161,16 +171,17 @@ class ScoreEntry(ttk.Entry):
     def __init__(self, parent: tk.Widget, *args, **kwargs) -> None:
         """Construct ScoreEntry widget on parent widget"""
         super().__init__(parent, *args, **kwargs)
+        vcmd = (self.register(self.validate), "%P")
+        ivcmd = (self.register(self.on_invalid), )
+        self.config(validate="focus", 
+                    validatecommand=vcmd, invalidcommand=ivcmd)
 
-    def validate(self):
-        pass
-
-    def get(self) -> tuple:
-        score = super().get().strip().upper()
+    def get_and_convert(self) -> tuple:
         """Get score string, convert it to int, return both as tuple,
         or an empty tuple, when entry field is empty.
         For example T20 -> ("T20", 60) or D5 -> ("D5", 10)"""
-        if not score:
+        score = super().get().strip().upper()
+        if not self.validate(score):
             return ()
         
         if score[0] == "D":
@@ -179,8 +190,22 @@ class ScoreEntry(ttk.Entry):
             converted_score = int(score[1:]) * 3
         else:
             converted_score = int(score)
-        return (score, converted_score)
-
+        return (score, 
+                converted_score)
+    
+    def validate(self, value) -> bool:
+        """Check if entered score is a valid darts score"""
+        pattern = r'^\s*(0|[1-9]|1[0-9]|20|25|50|[dt][1-9]|d1[0-9]|d20|t[1-9]|t1[0-9]|t20)\s*$'
+        if re.fullmatch(pattern, value, re.IGNORECASE) is None:
+            return False
+        self.config(foreground="black")
+        return True
+    
+    def on_invalid(self) -> None:
+        """Executed when entry validation returns False.
+        Change text color to red"""
+        if self.get():
+            self.config(foreground="red")
 
 class Statistics(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -381,7 +406,7 @@ class EntryPopup(ScoreEntry):
         self.column_id = column_id
         
         self.insert(0, text) 
-        self.original_score = self.get()
+        self.original_score = self.get_and_convert()
         self['exportselection'] = False
         self.focus_force()
         self.selection_range(0, 'end')
@@ -396,33 +421,39 @@ class EntryPopup(ScoreEntry):
         self.bind("<Tab>", lambda event: self.tab_pressed())
         self.bind("<FocusOut>", lambda event: self.destroy())
 
-    def on_return(self, event) -> None:
-        """Update record in ThrowHistory with the new value"""
-        updated_score = self.get() 
+    def on_return(self, event) -> 1 | -1:
+        """Update record in ThrowHistory with the new value.
+        Return -1 if updated score is not valid"""
+        updated_score = self.get_and_convert() 
         if not updated_score:
-            return
-        # Convert to list, to support item assignment
-        orginal_th_values = list(self.parent.item(self.row, "values"))
+            return -1
+        else:
+            # Convert to list, to support item assignment
+            original_th_values = list(self.parent.item(self.row, "values"))
 
-        # Update sum field
-        original_sum = orginal_th_values[-1]
-        updated_sum = (int(original_sum) 
-                       + updated_score[1] 
-                       - self.original_score[1])
+            # Update sum field
+            original_sum = original_th_values[-1]
+            updated_sum = (int(original_sum) 
+                        + updated_score[1] 
+                        - self.original_score[1])
 
-        # Update values        
-        updated_th_values = orginal_th_values
-        updated_th_values[self.column_id] = updated_score[0]
-        updated_th_values[-1] = updated_sum
+            # Update values        
+            updated_th_values = original_th_values
+            updated_th_values[self.column_id] = updated_score[0]
+            updated_th_values[-1] = updated_sum
 
-        # Update record in ThrowHistory
-        self.parent.item(self.row, values=updated_th_values)
-        self.destroy()
+            # Update record in ThrowHistory
+            self.parent.item(self.row, values=updated_th_values)
+            self.destroy()
+        return 1
     
     def tab_pressed(self) -> None:
-        """Create the next EntryPopup when tab is pressed"""
-        self.on_return(event=None)
-        if self.column_id != 3:
-            self.parent.master.edit_cell(event=None, row=self.row, 
-                                         column=f"#{self.column_id + 2}")
+        """Create the next EntryPopup when tab is pressed and 
+        the updated score is valid"""
+        success = self.on_return(event=None)
+        if success == 1:
+            if self.column_id != 3:
+                self.parent.master.edit_cell(event=None, row=self.row, 
+                                            column=f"#{self.column_id + 2}")
         
+            
