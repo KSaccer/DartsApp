@@ -426,6 +426,7 @@ class EntryPopup(ScoreEntry):
         Return -1 if updated score is not valid"""
         updated_score = self.get_and_convert() 
         if not updated_score:
+            self.config(foreground="red")
             return -1
         else:
             # Convert to list, to support item assignment
@@ -455,5 +456,7 @@ class EntryPopup(ScoreEntry):
             if self.column_id != 3:
                 self.parent.master.edit_cell(event=None, row=self.row, 
                                             column=f"#{self.column_id + 2}")
+        else:
+            return "break"
         
             
