@@ -12,7 +12,9 @@ FONT_MENU = ("Malgun Gothic", 12)
 
 
 class Game():
+    """Class to contain game data"""
     def __init__(self, game_id: int, game_type: str = "Scoring") -> None:
+        """Construct Game class"""
         self.game_id = game_id
         self.game_type = game_type
         self.start = None
@@ -20,8 +22,9 @@ class Game():
 
 
 class Scoring(ttk.Frame):
+    """Main class of Scoring page"""
     def __init__(self, parent, db, *args, **kwargs) -> None:
-
+        """Construct Scoring page"""
         # main config
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
@@ -39,6 +42,7 @@ class Scoring(ttk.Frame):
         self.create_gui()
 
     def create_gui(self) -> None:
+        """Construct widgets of Scoring page"""
         if self._created:
             return
         self.page_title = PageTitle(self)
@@ -63,7 +67,9 @@ class Scoring(ttk.Frame):
 
 
 class PageTitle(ttk.Frame):
+    """Class for page title"""
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct page title label"""
         super().__init__(parent, *args, **kwargs)
         label = ttk.Label(self, text="Darts Scoring Practice Session",
                           font=FONT_TITLE)
@@ -71,7 +77,9 @@ class PageTitle(ttk.Frame):
 
 
 class ScoreEntryBlock(ttk.LabelFrame):
+    """Class for score entry section"""
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct entry fields, labels and a button to submit data"""
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure((0, 1, 2, 3), weight=1)
@@ -88,6 +96,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
         self.create_bindings()
         
     def create_bindings(self) -> None:
+        """Create key event bindings for the entry fields"""
         self.throw_1.value.bind("<Return>", lambda event=None:
                                 self.throw_2.value.focus_set())
         self.throw_2.value.bind("<Return>", lambda event=None:
@@ -95,11 +104,13 @@ class ScoreEntryBlock(ttk.LabelFrame):
         self.throw_3.value.bind("<Return>", self.submit_data)
 
     def clear_values(self) -> None:
+        """Clear score entry fields"""
         self.throw_1.value.delete(0, tk.END)
         self.throw_2.value.delete(0, tk.END)
         self.throw_3.value.delete(0, tk.END)
 
     def get_values(self) -> list:
+        """Get values from entry fields"""
         return [
             self.throw_1.value.get_and_convert(),
             self.throw_2.value.get_and_convert(),
@@ -158,7 +169,9 @@ class ScoreEntryBlock(ttk.LabelFrame):
 
 
 class ThrowEntry():
+    """Class with a Label and a ScoreEntry next to it"""
     def __init__(self, parent, label_text: str, row: int) -> None:
+        """Construct Label and ScoreEntry on parent"""
         self.label = ttk.Label(parent, text=label_text)
         self.value = ScoreEntry(parent)
         self.label.grid(row=row, column=0, padx=10, pady=10)
@@ -208,6 +221,7 @@ class ScoreEntry(ttk.Entry):
             self.config(foreground="red")
 
 class Statistics(ttk.LabelFrame):
+    """Class for main statistics shown during a scoring session"""
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure((0, 1, 2, 3), weight=1)
@@ -218,6 +232,7 @@ class Statistics(ttk.LabelFrame):
         self.current_max = StatField(self, "Current maximum:", "0", 3)
 
     def get_statistics(self) -> dict:
+        """Get statistic values and return them as a dictionary"""
         return {
             "avg": self.avg.value.cget("text"),
             "darts_thrown": self.darts_thrown.value.cget("text"),
@@ -228,19 +243,23 @@ class Statistics(ttk.LabelFrame):
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
                        score: str, current_max: str) -> None:
+        """Set values of statistics shown during a scoring session"""
         self.avg.value.config(text=avg)
         self.darts_thrown.value.config(text=darts_thrown)
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
 
     def reset(self) -> None:
+        """Reset statistics"""
         for _ in [self.avg, self.darts_thrown, self.score, self.current_max]:
             _.value.config(text=_.initial_value)
 
 
 class StatField():
+    """Class for a statistic value shown in Statistics"""
     def __init__(self, parent, label_text: str,
                  value_text: str, row: int) -> None:
+        """Construnct StatField on parent"""
         self.initial_value = value_text
         self.label = ttk.Label(parent, text=label_text)
         self.value = ttk.Label(parent, text=value_text)

@@ -7,8 +7,10 @@ SQL_SCRIPT_PATH = os.path.join(
     "db_initialize.sql")
 
 class DataBase():
+    """Class for handling darts score database"""
 
     def __init__(self, db_path: str) -> None:
+        """Initialize database and get last game id"""
         self.db_path = db_path
         db_conn = self.create_connection()
         with db_conn:
@@ -18,6 +20,7 @@ class DataBase():
             self.last_game_id = self.get_last_game_id(db_conn)
 
     def get_last_game_id(self, db_conn: sqlite3.Connection) -> int:
+        """Get last game id from database"""
         cursor = db_conn.cursor()
         cursor.execute("SELECT MAX(game_id) FROM games")
         game_id = cursor.fetchone()[0]
@@ -26,16 +29,19 @@ class DataBase():
         return game_id
 
     def create_connection(self) -> sqlite3.Connection:
+        """Create an sqlite3 connection with the database"""
         db_conn = sqlite3.connect(self.db_path)
         return db_conn
 
     def db_initialize(self, db_conn: sqlite3.Connection,
                       sql_script: str) -> None:
+        """Initialize the database using the provided sql script"""
         cursor = db_conn.cursor()
         cursor.executescript(sql_script)
         db_conn.commit()
 
     def insert_game(self, record: tuple) -> None:
+        """Insert game into games table"""
         db_conn = sqlite3.connect(self.db_path)
         cursor = db_conn.cursor()
         cursor.execute(
@@ -46,15 +52,14 @@ class DataBase():
         self.last_game_id += 1
 
     def insert_data(self, record: tuple) -> None:
-        # 1. Open database
+        """Insert scoring data into throws table.
+        record = (game_id, throw_1, throw_2, throw_3, sum)"""
         db_conn = sqlite3.connect(self.db_path)
         cursor = db_conn.cursor()
-        # 2. Insert data
         cursor.execute(
             "INSERT INTO throws VALUES (?, ?, ?, ?, ?)",
             (self.last_game_id, *record)
             )
-        # 3. Close database
         db_conn.commit()
         db_conn.close()
 
