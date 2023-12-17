@@ -26,13 +26,16 @@ SQL_SCRIPT_NR_OF_SESSIONS = os.path.join(
 
 
 class StatPage(ttk.Frame):
+    """Main class for Statistics page"""
     def __init__(self, parent, db, *args, **kwargs) -> None:
+        """Construct Statistics page"""
         super().__init__(parent, *args, **kwargs)
         self.db = db
         self.rowconfigure((0, 1, 2), weight=1)
         self.columnconfigure(0, weight=1)
     
     def create_gui(self) -> None:
+        """Construct widgets of Statistics page"""
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, sticky="n")
         
@@ -46,7 +49,9 @@ class StatPage(ttk.Frame):
         
 
 class PageTitle(ttk.Frame):
+    """Class for page title"""
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct page title Label"""
         super().__init__(parent, *args, **kwargs)
         label = ttk.Label(self, text="Darts Practice Statistics",
                           font=FONT_TITLE)
@@ -54,7 +59,9 @@ class PageTitle(ttk.Frame):
 
 
 class PlotSelector(ttk.Frame):
+    """Container for drop down menus, with which the plot can be changed"""
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct drop downs and labels for it"""
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.rowconfigure(0, weight=1)
@@ -88,6 +95,7 @@ class PlotSelector(ttk.Frame):
         self.parent.plot_canvas.canvas.draw()
 
     def update_plot_type(self, event) -> None:
+        """Get drop down values and recreate plot accordingly"""
         plot_type = self.plot_type.get()
         sampling_rule = self.time_scale.get()[0]
         if plot_type == "Averages":
@@ -100,13 +108,15 @@ class PlotSelector(ttk.Frame):
         self.parent.plot_canvas.canvas.draw()
 
     def create_bindings(self) -> None:
+        """Create key event bindings for drop downs"""
         self.time_scale.bind("<<ComboboxSelected>>", self.update_time_scale)
         self.plot_type.bind("<<ComboboxSelected>>", self.update_plot_type)
 
 
 class PlotCanvas(ttk.Frame):
-    
+    """Frame for Plot"""
     def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct PlotCanvas and create default average plot"""
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.canvas = self._create_canvas()
@@ -125,16 +135,15 @@ class PlotCanvas(ttk.Frame):
         """Add Figure to canvas"""
         fig_size = self.canvas.figure.get_size_inches()
         self.canvas.figure.clear()
-        # self.canvas.draw()
         plot.fig.set_size_inches(fig_size)
         self.canvas.figure = plot.fig
-        # self.canvas.draw()
         self.plot = plot
         
 
 class Plot():
-
+    """Container for plot"""
     def __init__(self, db: "Database", sql_script: str, plot_type: str) -> None:
+        """Create DataFrame from database and plot"""
         self._df = self._create_df(db, sql_script)
         self.plot_type = plot_type
         self.fig = None
