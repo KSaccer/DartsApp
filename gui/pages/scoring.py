@@ -5,6 +5,7 @@ from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
 from ..constants import *
+from ..widgets.custom_popup import CustomPopup
 
 
 class Game():
@@ -275,24 +276,20 @@ class ButtonsFrame(ttk.LabelFrame):
         finish_button = ttk.Button(self, text="Finish",
                                    command=self.finish)
         restart_button = ttk.Button(self, text="Restart",
-                                    command=self.restart)
+                                    command=self.restart_clicked)
         finish_button.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
-    def restart(self, response=False) -> None:
-        """Reset session - clear statistics and table records"""
-        if not response:
-            response = messagebox.askokcancel(
-                "Confirmation",
-                "Do you really want to restart the session?\n"
-                "Scores and statistics will be discarded!")
+    def restart_clicked(self):
+        CustomPopup("Confirmation", "Do you really want to restart the session?\n"
+                        "Scores and statistics will be discarded!",
+                        self.restart)
 
-        if response:
-            self.parent.statistics.reset()
-            self.parent.throw_history.clear_table()
-            self.parent.game.start = None
-        else:
-            pass    # Session continues if user clicks Cancel
+    def restart(self) -> None:
+        """Reset session - clear statistics and table records"""
+        self.parent.statistics.reset()
+        self.parent.throw_history.clear_table()
+        self.parent.game.start = None
 
     def finish(self) -> None:
         """Insert data into database and close application"""
@@ -313,7 +310,7 @@ class ButtonsFrame(ttk.LabelFrame):
             self.parent.db.insert_data(throw_data)
         
         # Start new game
-        self.restart(response=True)
+        self.restart()
         self.parent.game.game_id += 1
 
 
