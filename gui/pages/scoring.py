@@ -4,11 +4,7 @@ import re
 from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
-
-
-FONT_TITLE = ("Arial", 20, "bold")
-FONT_DEFAULT = ("Arial", 10)
-FONT_MENU = ("Malgun Gothic", 12)
+from ..constants import *
 
 
 class Game():
@@ -479,3 +475,5 @@ class EntryPopup(ScoreEntry):
             return "break"
         
             
+if __name__ == "__main__":
+    pass

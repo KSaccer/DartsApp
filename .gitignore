@@ -1,5 +1,7 @@
 /__pycache__
-/pages/__pycache__/
+/gui/__pycache__/
+/gui/pages/__pycache__/
+/gui/widgets/__pycache__/
 /db/__pycache__/
 /.venv
 /scratch.py

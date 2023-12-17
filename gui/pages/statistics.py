@@ -6,21 +6,19 @@ import sqlite3
 import seaborn as sns
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+from ..constants import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure, Axes
 from typing import Self
 
 
-FONT_TITLE = ("Arial", 20, "bold")
-FONT_DEFAULT = ("Arial", 10)
-
 SQL_SCRIPT_AVG = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), 
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
     "sql", 
     "avg.sql")
 
 SQL_SCRIPT_NR_OF_SESSIONS = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), 
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
     "sql", 
     "nr_of_games.sql")
 
@@ -208,6 +206,6 @@ class Plot():
         self.fig.set_size_inches(self.fig_size)
         return self
 
-        
+
 if __name__ == "__main__":
     pass
