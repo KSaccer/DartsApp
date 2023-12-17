@@ -84,19 +84,20 @@ class DartsApp(tk.Tk):
 
     def close_app(self) -> None:
         """Show messagebox to confirm to quit, then close application"""
-        QuitPopup("Confirmation", "Do you really want to close the application?")
+        CustomPopup("Confirmation", "Do you really want to close the application?", self.quit)
 
 
-class QuitPopup(tk.Toplevel):
+class CustomPopup(tk.Toplevel):
     """Popup message to confirm to quit.
     Used instead of tk messaagebox, because that always centered on screen
     instead of application, even though parent kwarg was set"""
-    def __init__(self, title, message, **kwargs) -> None:
+    def __init__(self, title, message, callback_fct, **kwargs) -> None:
         super().__init__(**kwargs)
         """Construct the QuitPopup widget and make it a modal window.
         Main window remains inactive until this one closed."""
         self.message = message
         self.title(title)
+        self.callback_fct = callback_fct
         self.resizable(False, False)
         self._set_geometry()
         self._construct_widgets()
@@ -123,17 +124,17 @@ class QuitPopup(tk.Toplevel):
         icon.grid(row=0, column=0, rowspan=2, sticky="news")
         label = tk.Label(self, text=self.message, background="white", font=("Arial", 9))
         label.grid(row=0, column=1, rowspan=2, columnspan=2, sticky="news")
-        ok = ttk.Button(self, text="OK", command=self._close_app)
+        ok = ttk.Button(self, text="OK", command=self._callback)
         ok.grid(row=2, column=1, sticky="e")
         cancel = ttk.Button(self, text="Cancel", command=self.destroy)
         cancel.grid(row=2, column=2, padx=(10, 10), sticky="e") 
         ok.focus()
 
-    def _close_app(self) -> None:
-        """Callback funtcion for the yes button. Close the application."""
+    def _callback(self) -> None:
+        """Callback funtcion for the yes button."""
         # Need to be destroyed first (quit is paused until destroy)
         self.destroy()
-        self.master.quit()
+        self.callback_fct()
 
 
 class Menu(ttk.Frame):
