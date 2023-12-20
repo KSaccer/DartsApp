@@ -14,8 +14,13 @@ class Game():
         """Construct Game class"""
         self.game_id = game_id
         self.game_type = game_type
+        self.game_started = False
         self.start = None
         self.end = None
+
+    def initialize_game(self):
+        self.start = datetime.now()
+        self.game_started = True
 
 
 class Scoring(ttk.Frame):
@@ -87,7 +92,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
         self.throw_entries = [self.throw_1, self.throw_2, self.throw_3]
 
         self.submit = ttk.Button(self, text="Submit",
-                                 command=self.submit_data)
+                                 command=self.submit_button_clicked)
         self.submit.grid(row=3, column=0, columnspan=2, padx=10, pady=10,
                          sticky="news")
         self.create_bindings()
@@ -98,7 +103,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
                                 self.throw_2.value.focus_set())
         self.throw_2.value.bind("<Return>", lambda event=None:
                                 self.throw_3.value.focus_set())
-        self.throw_3.value.bind("<Return>", self.submit_data)
+        self.throw_3.value.bind("<Return>", self.submit_button_clicked)
 
     def clear_values(self) -> None:
         """Clear score entry fields"""
@@ -114,7 +119,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
             self.throw_3.value.get_and_convert()
             ]
 
-    def submit_data(self, *ignore) -> None:
+    def submit_button_clicked(self, *ignore) -> None:
         """
         0. Initialize Game.start time, if it's none
         1. Get entried scores, populate table, clear entry fields
@@ -125,26 +130,32 @@ class ScoreEntryBlock(ttk.LabelFrame):
         # This way the entry will be validated, otherwise not
         self.parent.focus()
 
-        # 0. Initialize Game.start time, if it's none
-        if not self.parent.game.start:
-            self.parent.game.start = datetime.now()
+        if not self.parent.game.game_started:
+            self.parent.game.initialize_game()
         # Check if entries are all valid
         validities = [throw.value.validate(throw.value.get().strip()) 
                       for throw in self.throw_entries]
         if not all(validities):
             self.throw_entries[validities.index(False)].value.focus()
             return
-        
-        # 1. Get entried scores, populate table, clear entry fields
+        else:
+            self.add_throws_into_throw_history()
+            self.update_statistic_fields()
+            self.clear_values()
+            self.throw_1.value.focus_set()
+
+    def add_throws_into_throw_history(self) -> None:
+        """Get entried scores and populate throw history table"""
         throws = self.get_values()
         throws_sum = sum([throw[1] for throw in throws])
-
         # populate table with throw data
         record = tuple([throw[0].upper() for throw in throws] + [throws_sum])
         self.parent.throw_history.add_record(record)
-        self.clear_values()
 
-        # 2. Update statistics
+    def update_statistic_fields(self) -> None:
+        """Update the values in the statistics fields"""
+        throws = self.get_values()
+        throws_sum = sum([throw[1] for throw in throws])
         stats = self.parent.statistics.get_statistics()
         updated_darts_thrown = int(stats["darts_thrown"]) + 3
         updated_score = int(stats["score"]) + throws_sum
@@ -160,9 +171,6 @@ class ScoreEntryBlock(ttk.LabelFrame):
         }
 
         self.parent.statistics.set_statistics(**updated_stats)
-
-        # 3. Set focus
-        self.throw_1.value.focus_set()
 
 
 class ThrowEntry():
