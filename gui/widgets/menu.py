@@ -9,6 +9,7 @@ class Menu(ttk.Frame):
     def __init__(self, parent, items: dict, *args, **kwargs) -> None:
         """Construct Menu widget, create bindings"""
         super().__init__(parent, *args, **kwargs)
+        self.columnconfigure(0, weight=1)
         self.parent = parent
         self.items = items
         self.menu_structure = self._build_menu()
@@ -29,8 +30,8 @@ class Menu(ttk.Frame):
                 submenu_items = self.items[item]
                 main_menu_label = tk.Label(self, text=item, font=FONT_MENU,
                                 background="#44546A", foreground="white",
-                                anchor="w", padx=20, pady=10)
-                main_menu_label.grid(row=row, column=0, sticky="news")
+                                anchor="nw", padx=20, pady=10)
+                main_menu_label.grid(row=row, column=0, sticky="ew")
                 row += 1
                 submenus = []
                 for submenu_item in submenu_items:
@@ -38,9 +39,9 @@ class Menu(ttk.Frame):
                                              font=FONT_MENU, 
                                              background="#44546A", 
                                              foreground="white", 
-                                             anchor="w", 
+                                             anchor="nw", 
                                              padx=20, pady=10)
-                    submenu_label.grid(row=row, column=0, sticky="news")
+                    submenu_label.grid(row=row, column=0, sticky="ew")
                     submenu_label.grid_remove()
                     row += 1
                     submenus.append(submenu_label)
@@ -50,8 +51,8 @@ class Menu(ttk.Frame):
             else:
                 main_menu_label = tk.Label(self, text=item, font=FONT_MENU,
                                 background="#44546A", foreground="white",
-                                anchor="w", padx=20, pady=10)
-                main_menu_label.grid(row=row, column=0, sticky="news")
+                                anchor="nw", padx=20, pady=10)
+                main_menu_label.grid(row=row, column=0, sticky="ew")
                 structure[main_menu_label] = self.items[item]
                 row += 1
         return structure
