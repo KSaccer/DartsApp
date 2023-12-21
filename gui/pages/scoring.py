@@ -61,8 +61,8 @@ class Scoring(ttk.Frame):
         self.buttons_frame.grid(row=3, column=0, padx=10, pady=10,
                                 sticky="news")
 
-        self.throw_history = ThrowHistory(self, text="Throw History")
-        self.throw_history.grid(row=1, column=1, padx=10, pady=10,
+        self.throw_history_table = ThrowHistoryTable(self, text="Throw History")
+        self.throw_history_table.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
         
         self._created = True
@@ -139,18 +139,18 @@ class ScoreEntryBlock(ttk.LabelFrame):
             self.throw_entries[validities.index(False)].value.focus()
             return
         else:
-            self.add_throws_into_throw_history()
+            self.add_throws_into_throw_history_table()
             self.update_statistic_fields()
             self.clear_values()
             self.throw_1.value.focus_set()
 
-    def add_throws_into_throw_history(self) -> None:
+    def add_throws_into_throw_history_table(self) -> None:
         """Get entried scores and populate throw history table"""
         throws = self.get_values()
         throws_sum = sum([throw[1] for throw in throws])
         # populate table with throw data
         record = tuple([throw[0].upper() for throw in throws] + [throws_sum])
-        self.parent.throw_history.add_record(record)
+        self.parent.throw_history_table.add_record(record)
 
     def update_statistic_fields(self) -> None:
         """Update the values in the statistics fields"""
@@ -296,7 +296,7 @@ class ButtonsFrame(ttk.LabelFrame):
     def restart(self) -> None:
         """Reset session - clear statistics and table records"""
         self.parent.statistics.reset()
-        self.parent.throw_history.clear_table()
+        self.parent.throw_history_table.clear_table()
         self.parent.game.start = None
 
     def finish(self) -> None:
@@ -313,7 +313,7 @@ class ButtonsFrame(ttk.LabelFrame):
             self.parent.db.insert_game(game_data)
 
         # Insert throws
-        for value in self.parent.throw_history.get_records():
+        for value in self.parent.throw_history_table.get_records():
             throw_data = tuple(value[1::])
             self.parent.db.insert_data(throw_data)
         
@@ -322,7 +322,7 @@ class ButtonsFrame(ttk.LabelFrame):
         self.parent.game.game_id += 1
 
 
-class ThrowHistory(ttk.LabelFrame):
+class ThrowHistoryTable(ttk.LabelFrame):
     """Class to show thrown scores in a tabular format"""
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -331,40 +331,46 @@ class ThrowHistory(ttk.LabelFrame):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.items = []
+        self.throw_history_table = self._create_table()
+        self._create_bindings()
 
+    def _create_table(self) -> ttk.Treeview:
+        """Create the table to store the thrown scores"""
         columns = {
-            "id": ("ID", True),
-            "throw_1": ("1st Throw", True),
-            "throw_2": ("2nd Throw", True),
-            "throw_3": ("3rd Throw", True),
-            "throw_sum": ("SUM", True)
+            "id": "ID",
+            "throw_1": "1st Throw",
+            "throw_2": "2nd Throw",
+            "throw_3": "3rd Throw",
+            "throw_sum": "SUM",
         }
-        self.throw_history = ttk.Treeview(self, columns=list(columns.keys()))
-        self.throw_history.grid(row=0, column=0, padx=10, pady=10,
+        table = ttk.Treeview(self, columns=list(columns.keys()))
+        table.grid(row=0, column=0, padx=10, pady=10,
                                 sticky="ns")
+        self._configure_table_columns(table, columns)
+        self._add_table_scrollbar(self, table)
+        return table
 
-        # Column config
-        self.throw_history["show"] = "headings"
-        self.throw_history["displaycolumns"] = [
-            column for column in columns if columns[column][1]
-            ]
+    @staticmethod
+    def _configure_table_columns(table: ttk.Treeview, columns: dict) -> None:
+        """Set titles and width for table columns"""
+        table["show"] = "headings"
         for column in columns:
-            self.throw_history.heading(column, text=columns[column][0])
-            self.throw_history.column(column, width=80, anchor=tk.CENTER)
+            table.heading(column, text=columns[column])
+            table.column(column, width=80, anchor=tk.CENTER)
 
-        # Throw history Scrollbar
-        scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL,
-                                  command=self.throw_history.yview)
-        self.throw_history.configure(yscroll=scrollbar.set)
+    @staticmethod
+    def _add_table_scrollbar(parent: tk.Widget, table: ttk.Treeview) -> None:
+        """Create a scrollbar for the table"""
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL,
+                                  command=table.yview)
+        table.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='ns')
 
-        self.create_bindings()
-
-    def create_bindings(self) -> None:
+    def _create_bindings(self) -> None:
         """Bind callout functions to events"""
-        self.throw_history.bind("<Double-1>", self.edit_cell)
+        self.throw_history_table.bind("<Double-1>", self._edit_cell)
         
-    def edit_cell(self, event, row=None, column=None) -> None:
+    def _edit_cell(self, event, row=None, column=None) -> None:
         """Open a PopupEntry field above the TreeView cell that was 
         double-clicked on to edit the score. Header row, ID and SUM column
         will be ignored and therefore not editable."""
@@ -376,43 +382,43 @@ class ThrowHistory(ttk.LabelFrame):
             pass
         
         if not row:
-            row = self.throw_history.identify_row(event.y)
+            row = self.throw_history_table.identify_row(event.y)
         if not column:
-            column = self.throw_history.identify_column(event.x)
+            column = self.throw_history_table.identify_column(event.x)
         column_id = int(column[1:]) - 1
 
         # Ignore header row and ID / SUM columns
         if not row or column in {"#1", "#5"}:
             return
         
-        x, y, width, height = self.throw_history.bbox(row, column)
+        x, y, width, height = self.throw_history_table.bbox(row, column)
         pady = height // 2
 
-        text = self.throw_history.item(row, "values")[column_id]
-        self.entry_popup = EntryPopup(self.throw_history, row, column_id, text)
+        text = self.throw_history_table.item(row, "values")[column_id]
+        self.entry_popup = EntryPopup(self.throw_history_table, row, column_id, text)
         self.entry_popup.place(x=x, y=y+pady, width=width, height=height, anchor="w")
 
     def add_record(self, record: tuple) -> None:
         """Add record to TreeView, update item list
           and move scroll to bottom"""
         if self.items:
-            last_id = int(self.throw_history.item(self.items[-1])["values"][0])
+            last_id = int(self.throw_history_table.item(self.items[-1])["values"][0])
         else:
             last_id = 0
         values = [last_id + 1] + [*record]
-        self.throw_history.insert("", tk.END, values=values)
-        self.items = self.throw_history.get_children()
-        self.throw_history.yview_moveto(1)
+        self.throw_history_table.insert("", tk.END, values=values)
+        self.items = self.throw_history_table.get_children()
+        self.throw_history_table.yview_moveto(1)
 
     def clear_table(self) -> None:
         """Clear all entries from TreeView"""
-        self.throw_history.delete(*self.items)
+        self.throw_history_table.delete(*self.items)
         self.items = []
 
     def get_records(self) -> Generator[str, None, None]:
         """Yield data from TreevView line by line"""
         for item in self.items:
-            yield self.throw_history.item(item)["values"]
+            yield self.throw_history_table.item(item)["values"]
 
 
 class EntryPopup(ScoreEntry):
