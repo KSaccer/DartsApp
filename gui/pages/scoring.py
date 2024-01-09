@@ -254,6 +254,33 @@ class Statistics(ttk.LabelFrame):
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
 
+    def calculate_statistics(self) -> dict:
+        """Get throws from history table, calculate statistics then
+        return them as a dictionary"""
+        throws = list(self.master.throw_history_table.get_records())
+        darts_thrown = len(throws) * 3
+        current_max = 0
+        score = 0
+        for throw in throws:
+            score += throw[-1]
+            if throw[-1] > current_max:
+                current_max = throw[-1]
+            else:
+                continue
+
+        return {
+            "avg": f'{score / darts_thrown * 3:.1f}',
+            "darts_thrown": f'{darts_thrown}',
+            "score": f'{score}',
+            "current_max": f'{current_max}'
+        }
+        
+    def update_statistics(self) -> None:
+        """Reevaluate all statistics field values using the item from 
+        the throw history table"""
+        updated_stats = self.calculate_statistics()
+        self.set_statistics(**updated_stats)
+
     def reset(self) -> None:
         """Reset statistics"""
         for _ in [self.avg, self.darts_thrown, self.score, self.current_max]:
@@ -471,6 +498,10 @@ class EntryPopup(ScoreEntry):
 
             # Update record in ThrowHistory
             self.parent.item(self.row, values=updated_th_values)
+
+            # Update Statistics fields
+            self.master.master.master.statistics.update_statistics()
+
             self.destroy()
         return 1
     
