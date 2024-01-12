@@ -1,3 +1,4 @@
+from __future__ import annotations
 import tkinter as tk
 import tkinter.ttk as ttk
 import os
@@ -7,6 +8,7 @@ import seaborn as sns
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from ..constants import *
+from abc import ABC, abstractmethod
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure, Axes
 from typing import Self
@@ -43,7 +45,6 @@ class StatPage(ttk.Frame):
 
             self.plot_canvas = PlotCanvas(self)
             self.plot_canvas.grid(row=2, column=0, sticky="news")
-        # self._created = True
         
 
 class PageTitle(ttk.Frame):
@@ -85,30 +86,18 @@ class PlotSelector(ttk.Frame):
 
         self.create_bindings()
 
-    def update_time_scale(self, event) -> None:
-        """Resample plot and update the canvas"""
+    def update_plot(self, event):
+        # choose strategy based on selected items
+        # ...
         sampling_rule = self.time_scale.get()[0]
-        new_plot = self.parent.plot_canvas.plot.resample_plot(sampling_rule)
-        self.parent.plot_canvas.add_plot(new_plot)
-        self.parent.plot_canvas.canvas.draw()
-
-    def update_plot_type(self, event) -> None:
-        """Get drop down values and recreate plot accordingly"""
-        plot_type = self.plot_type.get()
-        sampling_rule = self.time_scale.get()[0]
-        if plot_type == "Averages":
-            sql_script = SQL_SCRIPT_AVG
-        else:
-            sql_script = SQL_SCRIPT_NR_OF_SESSIONS
-        new_plot = Plot(self.parent.db, sql_script, plot_type)
-        new_plot.resample_plot(sampling_rule)
-        self.parent.plot_canvas.add_plot(new_plot)
+        plot = Plot(self.parent.db, sampling_rule)
+        self.parent.plot_canvas.add_plot(plot)
         self.parent.plot_canvas.canvas.draw()
 
     def create_bindings(self) -> None:
         """Create key event bindings for drop downs"""
-        self.time_scale.bind("<<ComboboxSelected>>", self.update_time_scale)
-        self.plot_type.bind("<<ComboboxSelected>>", self.update_plot_type)
+        self.time_scale.bind("<<ComboboxSelected>>", self.update_plot)
+        self.plot_type.bind("<<ComboboxSelected>>", self.update_plot)
 
 
 class PlotCanvas(ttk.Frame):
@@ -118,7 +107,7 @@ class PlotCanvas(ttk.Frame):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.canvas = self._create_canvas()
-        self.plot = Plot(self.parent.db, SQL_SCRIPT_AVG, "Averages")
+        self.plot = Plot(self.parent.db, "M")
         if self.plot.fig:
             self.add_plot(self.plot)
         
@@ -136,54 +125,78 @@ class PlotCanvas(ttk.Frame):
         plot.fig.set_size_inches(fig_size)
         self.canvas.figure = plot.fig
         self.plot = plot
-        
 
-class Plot():
-    """Container for plot"""
-    def __init__(self, db: "Database", sql_script: str, plot_type: str) -> None:
-        """Create DataFrame from database and plot"""
-        self._df = self._create_df(db, sql_script)
-        self.plot_type = plot_type
-        self.fig = None
-        if not self._df.empty:
-            self.fig, self.ax = self._create_plot(self._df)
-            self.fig_size = self.fig.get_size_inches()
+    
+class PlotStrategy(ABC):
+    """Strategy Interface for plot builder algorithms"""
 
-    def _create_df(self, db: "Database", sql_script: str) -> pd.DataFrame:
-        """Connect to database and run SQL query"""
+    @abstractmethod
+    def build_plot(self, db: DataBase) -> (Figure, Axes):
+        pass
+
+    @abstractmethod
+    def _create_df(self, db: DataBase, sql_script: str) -> None:
+        pass
+
+    @abstractmethod
+    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+        pass
+
+    @abstractmethod
+    def _format_plot_content(self, fig: Figure, ax: Axes) -> (Figure, Axes):
+        pass
+
+
+class ThreeDartAvg(PlotStrategy):
+    """Strategy for three dart average plot"""
+
+    sql_script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+        "sql", 
+        "avg.sql")
+    
+    def build_plot(self, db: DataBase, sampling_rule: str) -> (Figure, Axes):
+        """Create and format plot"""
+        # Create DataFrame
+        df = self._create_df(db, ThreeDartAvg.sql_script, sampling_rule)
+        fig, ax = self._create_plot_content(df)
+        fig, ax = self._format_plot_content(fig, ax)
+        return (fig, ax)
+      
+    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
+        """Create the DataFrame by connecting to the database and running
+        the SQL script"""
         conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
             df = pd.read_sql_query(query.read(), conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
-        df = df.resample("M").sum()
+        df = df.resample(sampling_rule).sum()
         conn.close()
         return df
     
-    def _create_plot(self, df: pd.DataFrame) -> (Figure, Axes):
-        """Create plot"""
+    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
         # Figure setup
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plots
-        if self.plot_type == "Averages":
-            sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
-                            color="tab:blue", marker='o', ax=ax)
-            sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
-                            color="lightgray", ax=ax)
-            ax.lines[0].set_linestyle("--")
-            try:
-                df_smooth = df.resample("D").interpolate(method="quadratic")
-            except ValueError:
-                df_smooth = df
-            sns.lineplot(x=df_smooth.index, 
-                         y=df_smooth.overall_score / df_smooth.visits, 
-                         color="tab:orange", ax=ax
-                         )
-        elif self.plot_type == "Nr of Sessions":
-            ax.bar(df.index, df.nr_of_games, width=15, 
-                   color="tab:blue",  edgecolor='darkblue')
-        # Formatting
+        sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
+                        color="tab:blue", marker='o', ax=ax)
+        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+                        color="lightgray", ax=ax)
+        ax.lines[0].set_linestyle("--")
+        try:
+            df_smooth = df.resample("D").interpolate(method="quadratic")
+        except ValueError:
+            df_smooth = df
+        sns.lineplot(x=df_smooth.index, 
+                        y=df_smooth.overall_score / df_smooth.visits, 
+                        color="tab:orange", ax=ax
+                        )
+        return (fig, ax)
+
+    def _format_plot_content(self, fig, ax) -> (Figure, Axes):
+        """Format plot axes and appearance"""
         years, months  = mdates.YearLocator(), mdates.MonthLocator()   # every year
         years_format = mdates.DateFormatter('%Y')
         months_format = mdates.DateFormatter('%m')
@@ -196,15 +209,17 @@ class Plot():
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        return (fig, ax)
+        
 
-        return fig, ax
-    
-    def resample_plot(self, sampling_rule: str) -> Self: 
-        """Resample time axis of plot (yearly / monthly)"""
-        df = self._df.resample(sampling_rule).sum()
-        self.fig, self.ax = self._create_plot(df)
-        self.fig.set_size_inches(self.fig_size)
-        return self
+class Plot():
+    """Container for plot"""
+    def __init__(self, db: DataBase, sampling_rule) -> None:
+        """Create Plot according to the set Strategy"""
+        self.strategy = ThreeDartAvg()
+        self.fig = None
+        self.fig, self.ax = self.strategy.build_plot(db, sampling_rule)
+        self.fig_size = self.fig.get_size_inches()
 
 
 if __name__ == "__main__":
