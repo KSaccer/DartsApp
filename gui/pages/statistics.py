@@ -45,6 +45,7 @@ class PlotSelector(ttk.Frame):
         "Averages": ThreeDartAvg(),
         "Nr of Sessions": NrOfSessions(),
         "Nr of darts thrown": NrOfDarts(),
+        "Nr of 180s": NrOf180s(),
     }
 
     sampling_rules = {
