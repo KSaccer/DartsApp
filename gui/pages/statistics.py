@@ -44,6 +44,7 @@ class PlotSelector(ttk.Frame):
     plot_strategies = {
         "Averages": ThreeDartAvg(),
         "Nr of Sessions": NrOfSessions(),
+        "Nr of darts thrown": NrOfDarts(),
     }
 
     sampling_rules = {
