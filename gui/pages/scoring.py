@@ -140,7 +140,7 @@ class ScoreEntryBlock(ttk.LabelFrame):
             return
         else:
             self.add_throws_into_throw_history_table()
-            self.update_statistic_fields()
+            self.parent.statistics.update_statistics()
             self.clear_values()
             self.throw_1.value.focus_set()
 
@@ -151,26 +151,6 @@ class ScoreEntryBlock(ttk.LabelFrame):
         # populate table with throw data
         record = tuple([throw[0].upper() for throw in throws] + [throws_sum])
         self.parent.throw_history_table.add_record(record)
-
-    def update_statistic_fields(self) -> None:
-        """Update the values in the statistics fields"""
-        throws = self.get_values()
-        throws_sum = sum([throw[1] for throw in throws])
-        stats = self.parent.statistics.get_statistics()
-        updated_darts_thrown = int(stats["darts_thrown"]) + 3
-        updated_score = int(stats["score"]) + throws_sum
-        updated_current_max = int(stats["current_max"])
-        if updated_current_max < throws_sum:
-            updated_current_max = throws_sum
-
-        updated_stats = {
-            "avg": f'{updated_score / updated_darts_thrown * 3:.1f}',
-            "darts_thrown": f'{updated_darts_thrown}',
-            "score": f'{updated_score}',
-            "current_max": f'{updated_current_max}'
-        }
-
-        self.parent.statistics.set_statistics(**updated_stats)
 
 
 class ThrowEntry():
