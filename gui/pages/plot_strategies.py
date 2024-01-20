@@ -12,6 +12,11 @@ from matplotlib.figure import Figure, Axes
 class PlotStrategy(ABC):
     """Strategy Interface for plot builder algorithms"""
 
+    dateformat = {
+        "M": "%Y-%m",
+        "Y": "%Y"
+    }
+
     @abstractmethod
     def build_plot(self, db: DataBase) -> (Figure, Axes):
         pass
@@ -54,6 +59,8 @@ class ThreeDartAvg(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
+        df.index = pd.to_datetime(df.index.strftime(
+            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
     
@@ -120,6 +127,8 @@ class NrOfSessions(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
+        df.index = pd.to_datetime(df.index.strftime(
+            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -175,6 +184,8 @@ class NrOfDarts(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
+        df.index = pd.to_datetime(df.index.strftime(
+            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -230,6 +241,8 @@ class NrOf180s(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
+        df.index = pd.to_datetime(df.index.strftime(
+            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -285,6 +298,8 @@ class PercentageOfTreblelessVisits(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
+        df.index = pd.to_datetime(df.index.strftime(
+            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
