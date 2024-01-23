@@ -12,11 +12,6 @@ from matplotlib.figure import Figure, Axes
 class PlotStrategy(ABC):
     """Strategy Interface for plot builder algorithms"""
 
-    dateformat = {
-        "M": "%Y-%m",
-        "Y": "%Y"
-    }
-
     @abstractmethod
     def build_plot(self, db: DataBase) -> (Figure, Axes):
         pass
@@ -48,6 +43,7 @@ class ThreeDartAvg(PlotStrategy):
         df = self._create_df(db, ThreeDartAvg.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax)
+        fig.tight_layout()
         return (fig, ax)
       
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
@@ -59,8 +55,6 @@ class ThreeDartAvg(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        df.index = pd.to_datetime(df.index.strftime(
-            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
     
@@ -116,6 +110,7 @@ class NrOfSessions(PlotStrategy):
         df = self._create_df(db, NrOfSessions.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax)
+        fig.tight_layout()
         return (fig, ax)
       
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
@@ -127,8 +122,6 @@ class NrOfSessions(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        df.index = pd.to_datetime(df.index.strftime(
-            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -173,6 +166,7 @@ class NrOfDarts(PlotStrategy):
         df = self._create_df(db, NrOfDarts.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax)
+        fig.tight_layout()
         return (fig, ax)
     
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
@@ -184,8 +178,6 @@ class NrOfDarts(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        df.index = pd.to_datetime(df.index.strftime(
-            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -230,6 +222,7 @@ class NrOf180s(PlotStrategy):
         df = self._create_df(db, NrOf180s.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax)
+        fig.tight_layout()
         return (fig, ax)
     
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
@@ -241,8 +234,6 @@ class NrOf180s(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        df.index = pd.to_datetime(df.index.strftime(
-            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 
@@ -287,6 +278,7 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         df = self._create_df(db, PercentageOfTreblelessVisits.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax)
+        fig.tight_layout()
         return (fig, ax)
     
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
@@ -298,8 +290,6 @@ class PercentageOfTreblelessVisits(PlotStrategy):
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        df.index = pd.to_datetime(df.index.strftime(
-            PlotStrategy.dateformat[sampling_rule]))
         conn.close()
         return df
 

@@ -50,8 +50,9 @@ class PlotSelector(ttk.Frame):
     }
 
     sampling_rules = {
-        "Monthly": "M",
-        "Yearly": "Y",
+        "Monthly": "MS",
+        "Yearly": "YS",
+        "Daily": "D",
     }
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -106,7 +107,7 @@ class PlotCanvas(ttk.Frame):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         self.canvas = self._create_canvas()
-        self.plot = Plot(self.parent.db, PlotCanvas.default_strategy, "M")
+        self.plot = Plot(self.parent.db, PlotCanvas.default_strategy, "MS")
         if self.plot.fig:
             self.add_plot(self.plot)
         
