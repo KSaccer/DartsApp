@@ -42,7 +42,7 @@ class ThreeDartAvg(PlotStrategy):
         # Create DataFrame
         df = self._create_df(db, ThreeDartAvg.sql_script, sampling_rule)
         fig, ax = self._create_plot_content(df)
-        fig, ax = self._format_plot_content(fig, ax)
+        fig, ax = self._format_plot_content(fig, ax, sampling_rule)
         fig.tight_layout()
         return (fig, ax)
       
@@ -66,7 +66,7 @@ class ThreeDartAvg(PlotStrategy):
         # Creating plot
         sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
                         color="tab:blue", marker='o', ax=ax)
-        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+        plot= sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
                         color="lightgray", ax=ax)
         ax.lines[0].set_linestyle("--")
         try:
@@ -79,20 +79,17 @@ class ThreeDartAvg(PlotStrategy):
                         )
         return (fig, ax)
 
-    def _format_plot_content(self, fig, ax) -> (Figure, Axes):
+    def _format_plot_content(self, fig, ax, sampling_rule) -> (Figure, Axes):
         """Format plot axes and appearance"""
-        years, months  = mdates.YearLocator(), mdates.MonthLocator()   # every year
-        years_format = mdates.DateFormatter('%Y')
-        months_format = mdates.DateFormatter('%m')
+        if sampling_rule == "YS":
+            ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.set_axisbelow(True)
         ax.xaxis.grid(color='lightgray', linestyle='dashed')
         ax.yaxis.grid(color='lightgray', linestyle='dashed')
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_format)
-        ax.xaxis.set_minor_locator(months)
-        ax.xaxis.set_minor_formatter(months_format)
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(ax.xaxis.get_major_locator()))
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
     
 
@@ -149,6 +146,7 @@ class NrOfSessions(PlotStrategy):
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
     
 
@@ -205,6 +203,7 @@ class NrOfDarts(PlotStrategy):
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
     
 
@@ -261,6 +260,7 @@ class NrOf180s(PlotStrategy):
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
     
 
@@ -328,6 +328,7 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         ax.xaxis.set_minor_formatter(months_format)
         for label in ax.get_xticklabels():
             label.set_rotation(90)
+        ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
     
 
