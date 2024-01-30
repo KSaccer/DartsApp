@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import datetime
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -38,7 +39,6 @@ class PlotStrategy(ABC):
         if sampling_rule == "YS":
             ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.set_axisbelow(True)
-        ax.xaxis.grid(color='lightgray', linestyle='dashed')
         ax.yaxis.grid(color='lightgray', linestyle='dashed')
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(ax.xaxis.get_major_locator()))
         for label in ax.get_xticklabels():
@@ -115,10 +115,11 @@ class NrOfSessions(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        ax.bar(df.index, df.nr_of_games, width=15, 
-               color="tab:blue",  edgecolor='darkblue')
+        sns.barplot(df, x="date", y="nr_of_games", ax=ax, 
+                    native_scale=True, color="tab:blue", edgecolor="darkblue")
+        ax.bar_label(ax.containers[0], fontsize=10)
         return (fig, ax)
-
+    
 
 class NrOfDarts(PlotStrategy):
     """Strategy for bar chart showing the nr of darts thrown"""
@@ -146,8 +147,9 @@ class NrOfDarts(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        ax.bar(df.index, df.darts_thrown, width=15, 
-               color="tab:blue",  edgecolor='darkblue')
+        sns.barplot(df, x="date", y="darts_thrown", ax=ax,
+                    native_scale=True, color="tab:blue", edgecolor="darkblue")
+        ax.bar_label(ax.containers[0], fontsize=10)
         return (fig, ax)
 
 
@@ -177,8 +179,9 @@ class NrOf180s(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        ax.bar(df.index, df.visits_180, width=15, 
-               color="tab:blue",  edgecolor='darkblue')
+        sns.barplot(df, x="date", y="visits_180", ax=ax,
+                    native_scale=True, color="tab:blue", edgecolor="darkblue")
+        ax.bar_label(ax.containers[0], fontsize=10)
         return (fig, ax)
 
 
