@@ -171,11 +171,13 @@ class ScoreEntry(ttk.Entry):
     #    0 : no score
     #   25 : single bull
     #   50 : bullseye
+    #    B : bouncer
+    #    R : robin hood
     
     VE_SINGLES = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20".split()
     VE_DOUBLES = ["D" + single for single in VE_SINGLES]
     VE_TRIPLES = ["T" + single for single in VE_SINGLES]
-    VE_SPECIAL = "0 25 50".split()
+    VE_SPECIAL = "0 25 50 B R".split()
     VALID_ENTRIES = VE_SINGLES + VE_DOUBLES + VE_TRIPLES + VE_SPECIAL
 
     def __init__(self, parent: tk.Widget, *args, **kwargs) -> None:
@@ -198,6 +200,8 @@ class ScoreEntry(ttk.Entry):
             converted_score = int(score[1:]) * 2
         elif score[0] == "T":
             converted_score = int(score[1:]) * 3
+        elif score in ["B", "R"]:
+            converted_score = 0
         else:
             converted_score = int(score)
         return (score, 
