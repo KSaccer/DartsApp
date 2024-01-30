@@ -15,6 +15,7 @@ class PlotStrategy(ABC):
     def build_plot(self, db: DataBase, sampling_rule: str) -> (Figure, Axes):
         """Execute plot builder process"""
         df = self._create_df(db, self.sql_script, sampling_rule)
+        plt.close('all')
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax, sampling_rule)
         fig.tight_layout()
