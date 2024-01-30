@@ -166,6 +166,18 @@ class ThrowEntry():
 class ScoreEntry(ttk.Entry):
     """Entry field to enter thrown score with methods to 
     validate and convert the score"""
+
+    # List of valid score entries:
+    #    0 : no score
+    #   25 : single bull
+    #   50 : bullseye
+    
+    VE_SINGLES = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20".split()
+    VE_DOUBLES = ["D" + single for single in VE_SINGLES]
+    VE_TRIPLES = ["T" + single for single in VE_SINGLES]
+    VE_SPECIAL = "0 25 50".split()
+    VALID_ENTRIES = VE_SINGLES + VE_DOUBLES + VE_TRIPLES + VE_SPECIAL
+
     def __init__(self, parent: tk.Widget, *args, **kwargs) -> None:
         """Construct ScoreEntry widget on parent widget"""
         super().__init__(parent, *args, **kwargs)
@@ -191,10 +203,9 @@ class ScoreEntry(ttk.Entry):
         return (score, 
                 converted_score)
     
-    def validate(self, value) -> bool:
+    def validate(self, value: str) -> bool:
         """Check if entered score is a valid darts score"""
-        pattern = r'^\s*(0|[1-9]|1[0-9]|20|25|50|[dt][1-9]|d1[0-9]|d20|t[1-9]|t1[0-9]|t20)\s*$'
-        if re.fullmatch(pattern, value, re.IGNORECASE) is None:
+        if value.upper() not in self.VALID_ENTRIES:
             return False
         self.config(foreground="black")
         return True
