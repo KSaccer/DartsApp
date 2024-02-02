@@ -30,10 +30,6 @@ class PlotStrategy(ABC):
     def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
         pass
 
-    @abstractmethod
-    def _format_plot_content(self, fig: Figure, ax: Axes) -> (Figure, Axes):
-        pass
-
     def _format_plot_content(self, fig, ax, sampling_rule) -> (Figure, Axes):
         """Format plot axes and appearance"""
         if sampling_rule == "YS":
