@@ -9,6 +9,7 @@ from gui.pages.dashboard import Dashboard
 from gui.pages.scoring import Scoring
 from gui.pages.settings import Settings
 from gui.pages.statistics import StatPage
+from gui.pages.best_worst import BestWorst
 
 
 DB_PATH = os.path.join(
@@ -47,13 +48,15 @@ class DartsApp(tk.Tk):
         self.db = DataBase(DB_PATH)
 
     def create_pages(self) -> None:
-        """Construct all the pages that will available through the sidemenu"""
+        """Construct all the pages that will be available through the sidemenu"""
         self.dashboard = Dashboard(self)
         self.dashboard.grid(row=0, column=1, sticky="news")
         self.scoring = Scoring(self, self.db)
         self.scoring.grid(row=0, column=1, sticky="news")
         self.statpage = StatPage(self, self.db)
         self.statpage.grid(row=0, column=1, sticky="news")
+        self.bestworst = BestWorst(self, self.db)
+        self.bestworst.grid(row=0, column=1, sticky="news")
         self.settings = Settings(self)
         self.settings.grid(row=0, column=1, sticky="news")
         self.dashboard.tkraise()
@@ -69,6 +72,7 @@ class DartsApp(tk.Tk):
                                "STATISTICS": {
                                    "Averages": self.statpage,
                                    "Histograms": self.statpage,
+                                   "Best-Worst": self.bestworst,
                                },
                                "SETTINGS": self.settings,
                                "QUIT": None,
