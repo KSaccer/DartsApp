@@ -1,8 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from datetime import date
 from tkcalendar import DateEntry
 from ..constants import *
-from .scoring import ThrowHistoryTable
 
 
 class BestWorst(ttk.Frame):
@@ -22,8 +22,8 @@ class BestWorst(ttk.Frame):
         self.page_title.grid(row=0, column=0, columnspan=2, 
                              padx=10, pady=(10, 5), sticky="n")
         
-        self.date_selector = BestWorstSettings(self, text="Date interval")
-        self.date_selector.grid(row=1, column=0, 
+        self.best_worst_settings_gui = BestWorstSettings(self, text="Settings")
+        self.best_worst_settings_gui.grid(row=1, column=0, 
                                 padx=(10, 5), pady=5, sticky="news")
 
         self.table_for_best = BestWorstTable(self, text="Best performance")
@@ -40,25 +40,49 @@ class BestWorstSettings(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct gui elements for settings"""
         super().__init__(parent, *args, **kwargs)
-        self.rowconfigure((0, 1, 2), weight=1)
+        self.rowconfigure((0, 1, 2, 3), weight=1)
         self.columnconfigure((0, 1), weight=1)
-        start_date_label = ttk.Label(self, text="Start:")
-        start_date_label.grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
-        start_date_entry = DateEntry(self, width=12, background='#44546A',
-                    foreground='white', borderwidth=1)
-        start_date_entry.grid(row=0, column=1, sticky="ew", padx=10, pady=(10, 5))
+        self.start_date_label = ttk.Label(self, text="Start:")
+        self.start_date_label.grid(row=0, column=0, sticky="w", 
+                                   padx=10, pady=(10, 5))
+        self.start_date_entry = DateEntry(self, width=12, background='#44546A', 
+                                          foreground='white', borderwidth=1)
+        self.start_date_entry.grid(row=0, column=1, sticky="ew",
+                                   padx=10, pady=(10, 5))
+        self.start_date_entry.set_date( date(date.today().year, 1, 1))
 
-        end_date_label = ttk.Label(self, text="End:")
-        end_date_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        end_date_entry = DateEntry(self, width=12, background='#44546A',
-                    foreground='white', borderwidth=2)
-        end_date_entry.grid(row=1, column=1, sticky="ew", padx=10, pady=5)
+        self.end_date_label = ttk.Label(self, text="End:")
+        self.end_date_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        self.end_date_entry = DateEntry(self, width=12, background='#44546A', 
+                                        foreground='white', borderwidth=2)
+        self.end_date_entry.grid(row=1, column=1, sticky="ew", padx=10, pady=5)
 
-        nr_of_visits_label = ttk.Label(self, text="Nr of visits:")
-        nr_of_visits_label.grid(row=2, column=0, sticky="ws", padx=10, pady=(5, 10))
-        nr_of_visits_entry = ttk.Entry(self)
-        nr_of_visits_entry.grid(row=2, column=1, sticky="ews", padx=10, pady=(5, 10))
+        self.nr_of_visits_label = ttk.Label(self, text="Nr of visits:")
+        self.nr_of_visits_label.grid(row=2, column=0, sticky="ws", 
+                                     padx=10, pady=(5, 10))
+        self.nr_of_visits_entry = ttk.Entry(self, )
+        self.nr_of_visits_entry.grid(row=2, column=1, sticky="ews", 
+                                     padx=10, pady=(5, 10))
+        self.nr_of_visits_entry.insert(0, "7")
 
+        self.analyze_button = ttk.Button(self, text="Analyze", 
+                                         command=self.analyze_button_clicked)
+        self.analyze_button.grid(row=3, column=1, sticky="news", 
+                                 padx=10, pady=(5, 10))
+
+    def analyze_button_clicked(self):
+        # read in settings
+        best_worst_settings = self.get_settings()
+        # create DataFrame acc. to set date interval
+        # find best and worst performance
+        # fill tables
+
+    def get_settings(self) -> tuple:
+        """Read in settings into a tuple"""
+        start_date = self.start_date_entry.get_date()
+        end_date = self.end_date_entry.get_date()
+        nr_of_visits = self.nr_of_visits_entry.get()
+        return (start_date, end_date, nr_of_visits)
 
 class PageTitle(ttk.Frame):
     """Class for page title"""
@@ -85,7 +109,8 @@ class BestWorstTable(ttk.LabelFrame):
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=1)
         self.columnconfigure((0, 1), weight=1)
-        self.table = ttk.Treeview(self, columns=list(BestWorstTable.columns.keys()))
+        self.table = ttk.Treeview(self, 
+                                  columns=list(BestWorstTable.columns.keys()))
         self.table.grid(row=0, column=0, 
                         padx=0, pady=10, sticky="nes")
         self.configure_table()
