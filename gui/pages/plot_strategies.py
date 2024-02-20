@@ -182,7 +182,7 @@ class NrOf180s(PlotStrategy):
 
 
 class PercentageOfTreblelessVisits(PlotStrategy):
-    """Strategy for bar chart showing the nr of 180s thrown"""
+    """Strategy for plot showing the percentage of visits without trebles"""
 
     sql_script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
@@ -207,9 +207,9 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.scatterplot(x=df.index, y=df.visits / df.trebleless, 
+        sns.scatterplot(x=df.index, y=df.trebleless / df.visits * 100, 
                         color="tab:blue", marker='o', ax=ax)
-        sns.lineplot(x=df.index, y=df.visits / df.trebleless, 
+        sns.lineplot(x=df.index, y=df.trebleless / df.visits * 100, 
                         color="lightgray", ax=ax)
         ax.lines[0].set_linestyle("--")
         try:
@@ -217,7 +217,7 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         except ValueError:
             df_smooth = df
         sns.lineplot(x=df_smooth.index, 
-                        y=df_smooth.visits / df_smooth.trebleless, 
+                        y=df_smooth.trebleless / df_smooth.visits * 100, 
                         color="tab:orange", ax=ax
                         )
         return (fig, ax)
