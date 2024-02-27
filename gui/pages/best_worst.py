@@ -1,3 +1,5 @@
+import pandas as pd
+import sqlite3
 import tkinter as tk
 import tkinter.ttk as ttk
 from datetime import date
@@ -37,6 +39,8 @@ class BestWorst(ttk.Frame):
 
 class BestWorstSettings(ttk.LabelFrame):
     """Container for settings elements"""
+
+
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct gui elements for settings"""
         super().__init__(parent, *args, **kwargs)
@@ -72,8 +76,10 @@ class BestWorstSettings(ttk.LabelFrame):
 
     def analyze_button_clicked(self):
         # read in settings
-        best_worst_settings = self.get_settings()
+        start_date, end_date, nr_of_visits = self.get_settings()
         # create DataFrame acc. to set date interval
+        best_worse_dataframe = self.create_best_worst_dataframe(start_date, end_date)
+        print(best_worse_dataframe)
         # find best and worst performance
         # fill tables
 
@@ -83,6 +89,25 @@ class BestWorstSettings(ttk.LabelFrame):
         end_date = self.end_date_entry.get_date()
         nr_of_visits = self.nr_of_visits_entry.get()
         return (start_date, end_date, nr_of_visits)
+    
+    def create_best_worst_dataframe(self, start_date: date, end_date: date) -> pd.DataFrame:
+        """Read data from database, that are between start_date and end_date"""
+        conn = sqlite3.connect(self.master.db.db_path)
+        
+        sql_script = f"""SELECT STRFTIME("%Y-%m-%d", games.game_start) AS date, 
+                        throws.game_id, sum
+                        FROM games
+                        JOIN throws ON games.game_id=throws.game_id
+                        WHERE date BETWEEN "{str(start_date)}" AND "{str(end_date)}";"""
+        
+        df = pd.read_sql_query(sql_script, conn, 
+                               parse_dates={"date": {"format": "%Y-%m-%d"}})
+        return df
+    
+    def find_best_and_worst(self, df: pd.DataFrame, rolling_avg_window) -> tuple:
+        """"""
+        pass
+
 
 class PageTitle(ttk.Frame):
     """Class for page title"""
