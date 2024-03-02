@@ -40,7 +40,6 @@ class BestWorst(ttk.Frame):
 class BestWorstSettings(ttk.LabelFrame):
     """Container for settings elements"""
 
-
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct gui elements for settings"""
         super().__init__(parent, *args, **kwargs)
@@ -78,19 +77,20 @@ class BestWorstSettings(ttk.LabelFrame):
         # read in settings
         start_date, end_date, nr_of_visits = self.get_settings()
         # create DataFrame acc. to set date interval
-        best_worse_dataframe = self.create_best_worst_dataframe(start_date, end_date)
-        print(best_worse_dataframe)
+        best_worse_dataframe = self._create_best_worst_dataframe(start_date, end_date)
         # find best and worst performance
-        # fill tables
+        best, worst = self._find_best_and_worst(best_worse_dataframe, nr_of_visits)
+        print(best, worst)
+        # update gui
 
     def get_settings(self) -> tuple:
         """Read in settings into a tuple"""
         start_date = self.start_date_entry.get_date()
         end_date = self.end_date_entry.get_date()
-        nr_of_visits = self.nr_of_visits_entry.get()
+        nr_of_visits = int(self.nr_of_visits_entry.get())
         return (start_date, end_date, nr_of_visits)
     
-    def create_best_worst_dataframe(self, start_date: date, end_date: date) -> pd.DataFrame:
+    def _create_best_worst_dataframe(self, start_date: date, end_date: date) -> pd.DataFrame:
         """Read data from database, that are between start_date and end_date"""
         conn = sqlite3.connect(self.master.db.db_path)
         
@@ -104,9 +104,26 @@ class BestWorstSettings(ttk.LabelFrame):
                                parse_dates={"date": {"format": "%Y-%m-%d"}})
         return df
     
-    def find_best_and_worst(self, df: pd.DataFrame, rolling_avg_window) -> tuple:
-        """"""
-        pass
+    def _find_best_and_worst(self, df: pd.DataFrame, rolling_avg_window) -> tuple:
+        """Find best and worst 3-dart averages using the given window
+        for the rolling average"""
+        best_average_overall, worst_average_overall = 0, 1000
+        game_id_min, game_id_max = df.game_id.min(), df.game_id.max()
+         
+        for game_id in range(game_id_min, game_id_max + 1):
+            
+            df_one_game = df[df["game_id"] == game_id]
+            df_one_game_rolled = df_one_game["sum"].rolling(rolling_avg_window).mean()
+            
+            best_average = df_one_game_rolled.max()
+            worst_average = df_one_game_rolled.min()
+            
+            if best_average > best_average_overall:
+                best_average_overall = best_average
+            if worst_average < worst_average_overall:
+                worst_average_overall = worst_average
+
+        return (best_average_overall, worst_average_overall)
 
 
 class PageTitle(ttk.Frame):
