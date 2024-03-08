@@ -26,7 +26,12 @@ class BestWorst(ttk.Frame):
         
         self.best_worst_settings_gui = BestWorstSettings(self, text="Settings")
         self.best_worst_settings_gui.grid(row=1, column=0, 
-                                padx=(10, 5), pady=5, sticky="news")
+                                          padx=(10, 5), pady=5, sticky="news")
+        
+        self.best_worst_avg_display = BestWorstAvgDisplay(self, 
+                                                              text="Averages")
+        self.best_worst_avg_display.grid(row=1, column=1,
+                                           padx=(5, 10), pady=5, sticky="news")
 
         self.table_for_best = BestWorstTable(self, text="Best performance")
         self.table_for_best.grid(row=2, column=0,
@@ -80,8 +85,8 @@ class BestWorstSettings(ttk.LabelFrame):
         best_worse_dataframe = self._create_best_worst_dataframe(start_date, end_date)
         # find best and worst performance
         best, worst = self._find_best_and_worst(best_worse_dataframe, nr_of_visits)
-        print(best, worst)
         # update gui
+        self.master.best_worst_avg_display._update_best_worst_values(best, worst)
 
     def get_settings(self) -> tuple:
         """Read in settings into a tuple"""
@@ -124,16 +129,49 @@ class BestWorstSettings(ttk.LabelFrame):
                 worst_average_overall = worst_average
 
         return (best_average_overall, worst_average_overall)
+  
+    
 
+        
 
 class PageTitle(ttk.Frame):
     """Class for page title"""
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct page title Label"""
         super().__init__(parent, *args, **kwargs)
-        label = ttk.Label(self, text="Best and worst performance",
+        page_title = ttk.Label(self, text="Best and worst performance",
                           font=FONT_TITLE)
-        label.pack(expand=True, fill="both", pady=10)      
+        page_title.pack(expand=True, fill="both", pady=10)      
+
+
+class BestWorstAvgDisplay(ttk.LabelFrame):
+    """Place to show the best and worst averages"""
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Construct labels, that will show the results"""
+        super().__init__(parent, *args, **kwargs)
+        self.rowconfigure((0, 1), weight=1)
+        self.columnconfigure((0, 1), weight=1)
+        self.best_avg_display = ttk.Label(self, text="Best:", font=FONT_BEST_WORST_DISPLAY)
+        self.best_avg_display.grid(row=0, column=0, 
+                                padx=10, pady=10, sticky="nw")
+        
+        self.best_avg_value = ttk.Label(self, text="0.0", font=FONT_BEST_WORST_DISPLAY)
+        self.best_avg_value.grid(row=0, column=1, 
+                                 padx=10, pady=10, sticky="nw")
+
+        self.worst_avg_display = ttk.Label(self, text="Worst:", font=FONT_BEST_WORST_DISPLAY)
+        self.worst_avg_display.grid(row=1, column=0, 
+                                 padx=10, pady=10, sticky="nw")
+
+        self.worst_avg_value = ttk.Label(self, text="0.0", font=FONT_BEST_WORST_DISPLAY)
+        self.worst_avg_value.grid(row=1, column=1, 
+                                 padx=10, pady=10, sticky="nw")
+
+    def _update_best_worst_values(self, best: float, worst: float) -> None:
+        """Update the displayed best and worst averages with 
+        the given values"""
+        self.best_avg_value.config(text=f"{best:.1f}")
+        self.worst_avg_value.config(text=f"{worst:.1f}")
 
 
 class BestWorstTable(ttk.LabelFrame):
