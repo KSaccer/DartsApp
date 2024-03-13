@@ -86,7 +86,9 @@ class BestWorstSettings(ttk.LabelFrame):
         # find best and worst performance
         best, worst = self._find_best_and_worst(best_worse_dataframe, nr_of_visits)
         # update gui
-        self.master.best_worst_avg_display._update_best_worst_values(best, worst)
+        self.master.best_worst_avg_display._update_best_worst_values(best[0], worst[0])
+        self.master.table_for_best.add_records(best[1])
+        self.master.table_for_worst.add_records(worst[1])
 
     def get_settings(self) -> tuple:
         """Read in settings into a tuple"""
@@ -100,7 +102,9 @@ class BestWorstSettings(ttk.LabelFrame):
         conn = sqlite3.connect(self.master.db.db_path)
         
         sql_script = f"""SELECT STRFTIME("%Y-%m-%d", games.game_start) AS date, 
-                        throws.game_id, sum
+                        throws.game_id, 
+                        throws.throw_1, throws.throw_2, throws.throw_3, 
+                        sum
                         FROM games
                         JOIN throws ON games.game_id=throws.game_id
                         WHERE date BETWEEN "{str(start_date)}" AND "{str(end_date)}";"""
@@ -121,14 +125,23 @@ class BestWorstSettings(ttk.LabelFrame):
             df_one_game_rolled = df_one_game["sum"].rolling(rolling_avg_window).mean()
             
             best_average = df_one_game_rolled.max()
+            best_average_row_id = df_one_game_rolled.idxmax() 
             worst_average = df_one_game_rolled.min()
+            worst_average_row_id = df_one_game_rolled.idxmin()
             
             if best_average > best_average_overall:
                 best_average_overall = best_average
+                best_throws = df.iloc[
+                    best_average_row_id - 6 : best_average_row_id + 1
+                    ]
             if worst_average < worst_average_overall:
                 worst_average_overall = worst_average
+                worst_throws = df.iloc[
+                    worst_average_row_id - 6 : worst_average_row_id + 1
+                    ]
 
-        return (best_average_overall, worst_average_overall)
+        return ((best_average_overall, best_throws), 
+                (worst_average_overall, worst_throws))
   
     
 
@@ -207,11 +220,21 @@ class BestWorstTable(ttk.LabelFrame):
                 self.table.column(column, width=75, anchor=tk.CENTER)
 
     def add_table_scrollbar(self) -> None:
+        """Add a vertical scrollbar widget to the table"""
         scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, 
                                   command=self.table.yview)
         self.table.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, 
                        padx=0, sticky="news")
+        
+    def add_records(self, df: pd.DataFrame) -> None:
+        """Add records from the provided dataframe to the table"""
+        self._clear_table()
+        for i in range(df.shape[0]):
+            self.table.insert("", tk.END, values=df.iloc[i, 1:].tolist())
+
+    def _clear_table(self):
+        pass
 
 
 if __name__ == "__main__":
