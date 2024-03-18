@@ -126,18 +126,19 @@ class BestWorstSettings(ttk.LabelFrame):
             
             best_average = df_one_game_rolled.max()
             best_average_row_id = df_one_game_rolled.idxmax() 
+
             worst_average = df_one_game_rolled.min()
             worst_average_row_id = df_one_game_rolled.idxmin()
-            
+
             if best_average > best_average_overall:
                 best_average_overall = best_average
                 best_throws = df.iloc[
-                    best_average_row_id - 6 : best_average_row_id + 1
+                    best_average_row_id - rolling_avg_window + 1 : best_average_row_id + 1
                     ]
             if worst_average < worst_average_overall:
                 worst_average_overall = worst_average
                 worst_throws = df.iloc[
-                    worst_average_row_id - 6 : worst_average_row_id + 1
+                    worst_average_row_id - rolling_avg_window + 1 : worst_average_row_id + 1
                     ]
 
         return ((best_average_overall, best_throws), 
@@ -233,8 +234,9 @@ class BestWorstTable(ttk.LabelFrame):
         for i in range(df.shape[0]):
             self.table.insert("", tk.END, values=df.iloc[i, 1:].tolist())
 
-    def _clear_table(self):
-        pass
+    def _clear_table(self) -> None:
+        """Remove items from table"""
+        self.table.delete(*self.table.get_children())
 
 
 if __name__ == "__main__":
