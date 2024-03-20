@@ -224,12 +224,13 @@ class Statistics(ttk.LabelFrame):
     """Class for main statistics shown during a scoring session"""
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
-        self.rowconfigure((0, 1, 2, 3), weight=1)
+        self.rowconfigure((0, 1, 2, 3, 4), weight=1)
         self.columnconfigure((0, 1), weight=1)
         self.avg = StatField(self, "Average:", "0.0", 0)
         self.darts_thrown = StatField(self, "Darts thrown:", "0", 1)
         self.score = StatField(self, "Score:", "0", 2)
         self.current_max = StatField(self, "Current maximum:", "0", 3)
+        self.trebleless_visits = StatField(self, "Trebleless visits: ", "0.0 %", 4)
 
     def get_statistics(self) -> dict:
         """Get statistic values and return them as a dictionary"""
@@ -242,12 +243,14 @@ class Statistics(ttk.LabelFrame):
 
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
-                       score: str, current_max: str) -> None:
+                       score: str, current_max: str, 
+                       trebleless_visits: str) -> None:
         """Set values of statistics shown during a scoring session"""
         self.avg.value.config(text=avg)
         self.darts_thrown.value.config(text=darts_thrown)
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
+        self.trebleless_visits.value.config(text=trebleless_visits)
 
     def calculate_statistics(self) -> dict:
         """Get throws from history table, calculate statistics then
@@ -256,18 +259,29 @@ class Statistics(ttk.LabelFrame):
         darts_thrown = len(throws) * 3
         current_max = 0
         score = 0
+        nr_of_trebleless_visits = 0
         for throw in throws:
             score += throw[-1]
             if throw[-1] > current_max:
                 current_max = throw[-1]
             else:
-                continue
+                pass
+            is_treble_thrown = any([True if str(single_throw)[0] == "T" 
+                                    else False 
+                                    for single_throw in throw[1:4]])
+            if not is_treble_thrown:
+                nr_of_trebleless_visits += 1
+            else:
+                pass
 
         return {
             "avg": f'{score / darts_thrown * 3:.1f}',
             "darts_thrown": f'{darts_thrown}',
             "score": f'{score}',
-            "current_max": f'{current_max}'
+            "current_max": f'{current_max}',
+            "trebleless_visits": f'{nr_of_trebleless_visits 
+                                    / (darts_thrown / 3) 
+                                    * 100:.1f}%'
         }
         
     def update_statistics(self) -> None:
@@ -290,8 +304,8 @@ class StatField():
         self.initial_value = value_text
         self.label = ttk.Label(parent, text=label_text)
         self.value = ttk.Label(parent, text=value_text)
-        self.label.grid(row=row, column=0, padx=10, pady=10, sticky="e")
-        self.value.grid(row=row, column=1, padx=10, pady=10, sticky="w")
+        self.label.grid(row=row, column=0, padx=10, pady=5, sticky="e")
+        self.value.grid(row=row, column=1, padx=10, pady=5, sticky="w")
 
 
 class ButtonsFrame(ttk.LabelFrame):
