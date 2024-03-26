@@ -251,6 +251,13 @@ class Statistics(ttk.LabelFrame):
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
         self.trebleless_visits.value.config(text=trebleless_visits)
+        self._stat_fields = [
+            self.avg,
+            self.darts_thrown,
+            self.score,
+            self.current_max,
+            self.trebleless_visits,
+        ]
 
     def calculate_statistics(self) -> dict:
         """Get throws from history table, calculate statistics then
@@ -292,8 +299,8 @@ class Statistics(ttk.LabelFrame):
 
     def reset(self) -> None:
         """Reset statistics"""
-        for _ in [self.avg, self.darts_thrown, self.score, self.current_max]:
-            _.value.config(text=_.initial_value)
+        for stat_field in self._stat_fields:
+            stat_field.value.config(text=stat_field.initial_value)
 
 
 class StatField():
