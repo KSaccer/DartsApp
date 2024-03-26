@@ -232,14 +232,14 @@ class Statistics(ttk.LabelFrame):
         self.current_max = StatField(self, "Current maximum:", "0", 3)
         self.trebleless_visits = StatField(self, "Trebleless visits: ", "0.0 %", 4)
 
-    def get_statistics(self) -> dict:
-        """Get statistic values and return them as a dictionary"""
-        return {
-            "avg": self.avg.value.cget("text"),
-            "darts_thrown": self.darts_thrown.value.cget("text"),
-            "score": self.score.value.cget("text"),
-            "current_max": self.current_max.value.cget("text")
-        }
+    # def get_statistics(self) -> dict:
+    #     """Get statistic values and return them as a dictionary"""
+    #     return {
+    #         "avg": self.avg.value.cget("text"),
+    #         "darts_thrown": self.darts_thrown.value.cget("text"),
+    #         "score": self.score.value.cget("text"),
+    #         "current_max": self.current_max.value.cget("text")
+    #     }
 
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
