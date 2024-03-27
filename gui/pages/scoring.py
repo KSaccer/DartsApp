@@ -359,6 +359,9 @@ class ButtonsFrame(ttk.LabelFrame):
         for value in self.parent.throw_history_table.get_records():
             throw_data = tuple(value[1::])
             self.parent.db.insert_data(throw_data)
+
+        # Backup database
+        self.parent.db.backup_database()
         
         # Start new game
         self.restart()

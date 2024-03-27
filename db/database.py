@@ -1,10 +1,15 @@
 import sqlite3
 import os
+from datetime import datetime
+from pathlib import Path
+from shutil import copy
 
 SQL_SCRIPT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 
     "sql", 
     "db_initialize.sql")
+
+BACKUP_PATH = os.path.join("D:", os.sep, "Dolgok", "Darts")
 
 class DataBase():
     """Class for handling darts score database"""
@@ -62,6 +67,14 @@ class DataBase():
             )
         db_conn.commit()
         db_conn.close()
+
+    def backup_database(self) -> None:
+        """Create a copy of the db with a timestamp in the filename in the 
+        folder defined by the BACKUP_PATH constant"""
+        current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = f"{Path(self.db_path).stem}_{current_datetime}.db"
+        copy(self.db_path, os.path.join(BACKUP_PATH, backup_file))
+
 
 
 if __name__ == "__main__":
