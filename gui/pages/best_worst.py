@@ -53,7 +53,8 @@ class BestWorstSettings(ttk.LabelFrame):
         self.start_date_label = ttk.Label(self, text="Start:")
         self.start_date_label.grid(row=0, column=0, sticky="w", 
                                    padx=10, pady=(10, 5))
-        self.start_date_entry = DateEntry(self, width=12, background='#44546A', 
+        self.start_date_entry = DateEntry(self, width=12, 
+                                          background=COLOR_BG_DATE_ENTRY, 
                                           foreground='white', borderwidth=1)
         self.start_date_entry.grid(row=0, column=1, sticky="ew",
                                    padx=10, pady=(10, 5))
@@ -61,7 +62,8 @@ class BestWorstSettings(ttk.LabelFrame):
 
         self.end_date_label = ttk.Label(self, text="End:")
         self.end_date_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        self.end_date_entry = DateEntry(self, width=12, background='#44546A', 
+        self.end_date_entry = DateEntry(self, width=12, 
+                                        background=COLOR_BG_DATE_ENTRY, 
                                         foreground='white', borderwidth=2)
         self.end_date_entry.grid(row=1, column=1, sticky="ew", padx=10, pady=5)
 
@@ -154,7 +156,7 @@ class PageTitle(ttk.Frame):
         """Construct page title Label"""
         super().__init__(parent, *args, **kwargs)
         page_title = ttk.Label(self, text="Best and worst performance",
-                          font=FONT_TITLE)
+                          font=FONT_TITLE, foreground=COLOR_FONT_TITLE)
         page_title.pack(expand=True, fill="both", pady=10)      
 
 
@@ -165,19 +167,27 @@ class BestWorstAvgDisplay(ttk.LabelFrame):
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure((0, 1), weight=1)
         self.columnconfigure((0, 1), weight=1)
-        self.best_avg_display = ttk.Label(self, text="Best:", font=FONT_BEST_WORST_DISPLAY)
+        self.best_avg_display = ttk.Label(self, text="Best:", 
+                                          font=FONT_BEST_WORST_DISPLAY,
+                                          foreground=COLOR_FONT_BEST_WORST)
         self.best_avg_display.grid(row=0, column=0, 
                                 padx=10, pady=10, sticky="nw")
         
-        self.best_avg_value = ttk.Label(self, text="0.0", font=FONT_BEST_WORST_DISPLAY)
+        self.best_avg_value = ttk.Label(self, text="0.0", 
+                                        font=FONT_BEST_WORST_DISPLAY,
+                                        foreground=COLOR_FONT_BEST_WORST)
         self.best_avg_value.grid(row=0, column=1, 
                                  padx=10, pady=10, sticky="nw")
 
-        self.worst_avg_display = ttk.Label(self, text="Worst:", font=FONT_BEST_WORST_DISPLAY)
+        self.worst_avg_display = ttk.Label(self, text="Worst:",
+                                           font=FONT_BEST_WORST_DISPLAY, 
+                                           foreground=COLOR_FONT_BEST_WORST)
         self.worst_avg_display.grid(row=1, column=0, 
                                  padx=10, pady=10, sticky="nw")
 
-        self.worst_avg_value = ttk.Label(self, text="0.0", font=FONT_BEST_WORST_DISPLAY)
+        self.worst_avg_value = ttk.Label(self, text="0.0", 
+                                         font=FONT_BEST_WORST_DISPLAY,
+                                         foreground=COLOR_FONT_BEST_WORST)
         self.worst_avg_value.grid(row=1, column=1, 
                                  padx=10, pady=10, sticky="nw")
 

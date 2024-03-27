@@ -42,6 +42,11 @@ class DartsApp(tk.Tk):
         self.resizable(False, False)
         self.option_add("*Font", FONT_DEFAULT)
         self.protocol("WM_DELETE_WINDOW", self.close_app)
+        style = ttk.Style()
+        style.configure("TButton", font=FONT_DEFAULT, foreground=COLOR_FONT_DEFAULT)
+        style.configure("TLabelframe.Label", font=FONT_DEFAULT, foreground=COLOR_FONT_DEFAULT)
+        style.configure("Treeview", font=FONT_TREEVIEW)
+        style.configure("Treeview.Heading", font=FONT_TREEVIEW, foreground=COLOR_FONT_DEFAULT)
 
     def setup_database(self) -> None:
         """Create a DataBase instance"""
@@ -64,7 +69,7 @@ class DartsApp(tk.Tk):
     def create_sidemenu(self) -> None:
         """Create the side menu"""
         menu_style = ttk.Style()
-        menu_style.configure("Menu.TFrame", background="#44546A")
+        menu_style.configure("Menu.TFrame", background=COLOR_BG_MENU)
         self.menu = Menu(self,
                          items={
                                "DASHBOARD": self.dashboard,

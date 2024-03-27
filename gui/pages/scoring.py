@@ -74,7 +74,7 @@ class PageTitle(ttk.Frame):
         """Construct page title label"""
         super().__init__(parent, *args, **kwargs)
         label = ttk.Label(self, text="Darts Scoring Practice Session",
-                          font=FONT_TITLE)
+                          font=FONT_TITLE, foreground=COLOR_FONT_TITLE)
         label.pack(expand=True, fill="both")
 
 

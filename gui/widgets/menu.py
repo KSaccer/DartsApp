@@ -21,7 +21,7 @@ class Menu(ttk.Frame):
         where the key is a menu item, the value is either a page, or
         a list of submenu items"""
         structure = {}
-        spacer = tk.Label(self, text="", background="#44546A", padx=20, pady=10)
+        spacer = tk.Label(self, text="", background=COLOR_BG_MENU, padx=20, pady=10)
         spacer.grid(row=0, column=0)
         row = 1
         for item in self.items:
@@ -29,7 +29,7 @@ class Menu(ttk.Frame):
             if isinstance(self.items[item], dict):
                 submenu_items = self.items[item]
                 main_menu_label = tk.Label(self, text=item, font=FONT_MENU,
-                                background="#44546A", foreground="white",
+                                background=COLOR_BG_MENU, foreground=COLOR_FONT_MENU,
                                 anchor="nw", padx=20, pady=10)
                 main_menu_label.grid(row=row, column=0, sticky="ew")
                 row += 1
@@ -37,8 +37,8 @@ class Menu(ttk.Frame):
                 for submenu_item in submenu_items:
                     submenu_label = tk.Label(self, text="  "+submenu_item, 
                                              font=FONT_MENU, 
-                                             background="#44546A", 
-                                             foreground="white", 
+                                             background=COLOR_BG_MENU, 
+                                             foreground=COLOR_FONT_MENU, 
                                              anchor="nw", 
                                              padx=20, pady=10)
                     submenu_label.grid(row=row, column=0, sticky="ew")
@@ -50,7 +50,7 @@ class Menu(ttk.Frame):
             # Main menu
             else:
                 main_menu_label = tk.Label(self, text=item, font=FONT_MENU,
-                                background="#44546A", foreground="white",
+                                background=COLOR_BG_MENU, foreground=COLOR_FONT_MENU,
                                 anchor="nw", padx=20, pady=10)
                 main_menu_label.grid(row=row, column=0, sticky="ew")
                 structure[main_menu_label] = self.items[item]
@@ -64,9 +64,9 @@ class Menu(ttk.Frame):
     def _create_bindings(self, widget, reference: dict) -> None:
         """Assign callback functions for specific events of widget"""
         widget.bind("<Enter>", lambda event=None:
-                    self._color_config(widget, "#333F50"))
+                    self._color_config(widget, COLOR_BG_MENU_HOVER))
         widget.bind("<Leave>", lambda event=None:
-                    self._color_config(widget, "#44546A"))
+                    self._color_config(widget, COLOR_BG_MENU))
         widget.bind("<Button-1>", lambda event=None:
                     self._menu_clicked(reference))
 
