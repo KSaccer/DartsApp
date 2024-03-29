@@ -25,7 +25,7 @@ class CustomPopup(tk.Toplevel):
 
     def _set_geometry(self) -> None:
         """Determine widget target position and setup geometry"""
-        width = 320
+        width = 350
         height = 120
         pos_x = self.master.winfo_x() + GEOMETRY_W // 2 - width // 2
         pos_y = self.master.winfo_y() + GEOMETRY_H // 2 - height // 2
@@ -38,7 +38,7 @@ class CustomPopup(tk.Toplevel):
         self.columnconfigure((0, 1), weight=1)
         icon = tk.Label(self, image="::tk::icons::question", background="white")
         icon.grid(row=0, column=0, rowspan=2, sticky="news")
-        label = tk.Label(self, text=self.message, background="white", font=("Arial", 9))
+        label = tk.Label(self, text=self.message, background="white", font=FONT_DEFAULT)
         label.grid(row=0, column=1, rowspan=2, columnspan=2, sticky="news")
         ok = ttk.Button(self, text="OK", command=self._callback)
         ok.grid(row=2, column=1, sticky="e")
