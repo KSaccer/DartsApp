@@ -150,7 +150,7 @@ class NrOfDarts(PlotStrategy):
 
 
 class NrOf180s(PlotStrategy):
-    """Strategy for bar chart showing the nr of 180s thrown"""
+    """Strategy for bar chart showing the nr of 180s/171s thrown"""
 
     sql_script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 

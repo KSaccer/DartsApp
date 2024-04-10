@@ -45,7 +45,7 @@ class PlotSelector(ttk.Frame):
         "Averages": ThreeDartAvg(),
         "Nr of Sessions": NrOfSessions(),
         "Nr of darts thrown": NrOfDarts(),
-        "Nr of 180s": NrOf180s(),
+        "Nr of 180s/171s": NrOf180s(),
         "Trebleless ratio": PercentageOfTreblelessVisits(),
     }
 
