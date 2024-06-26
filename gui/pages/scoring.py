@@ -232,15 +232,6 @@ class Statistics(ttk.LabelFrame):
         self.current_max = StatField(self, "Current maximum:", "0", 3)
         self.trebleless_visits = StatField(self, "Trebleless visits: ", "0.0 %", 4)
 
-    # def get_statistics(self) -> dict:
-    #     """Get statistic values and return them as a dictionary"""
-    #     return {
-    #         "avg": self.avg.value.cget("text"),
-    #         "darts_thrown": self.darts_thrown.value.cget("text"),
-    #         "score": self.score.value.cget("text"),
-    #         "current_max": self.current_max.value.cget("text")
-    #     }
-
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
                        score: str, current_max: str, 
@@ -374,10 +365,12 @@ class ThrowHistoryTable(ttk.LabelFrame):
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct TrowHistory table to store thrown scores"""
         super().__init__(parent, *args, **kwargs)
-        self.rowconfigure(0, weight=1)
+        self.rowconfigure(0, weight=14)
+        self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
         self.items = []
         self.throw_history_table = self._create_table()
+        self.single_dart_stat_row = self._add_single_dart_stat_row()
         self._create_bindings()
 
     def _create_table(self) -> ttk.Treeview:
@@ -390,11 +383,35 @@ class ThrowHistoryTable(ttk.LabelFrame):
             "throw_sum": "SUM",
         }
         table = ttk.Treeview(self, columns=list(columns.keys()))
-        table.grid(row=0, column=0, padx=10, pady=10,
+        table.grid(row=0, column=0, padx=10, pady=(10,0),
                                 sticky="ns")
         self._configure_table_columns(table, columns)
         self._add_table_scrollbar(self, table)
         return table
+    
+    def _add_single_dart_stat_row(self) -> ttk.Treeview:
+        """Add a single dart statistic row under the throw history table"""
+        style = ttk.Style()
+        style.configure("single_dart_stat_row.Treeview", 
+                        background="#44546A", 
+                        foreground="white",
+                        rowheight=20,
+                        padding=(-1, -1)
+                        )
+        # style.layout("single_dart_stat_row.Treeview", [('single_dart_stat_row.Treeview.treearea', { "sticky": "nswe"})])
+
+        columns = [1, 2, 3, 4, 5]
+        single_dart_stat_row = ttk.Treeview(self, columns=columns, height=0, selectmode="none", style="single_dart_stat_row.Treeview")
+        single_dart_stat_row.grid(row=1, column=0, padx=10, pady=(0,10),
+                                sticky="ns")
+        single_dart_stat_row["show"] = ""
+        for column in columns:
+            single_dart_stat_row.column(column, width=80, anchor=tk.CENTER)
+        single_dart_stat_row.insert("", tk.END, values=["AVG:", 0.0, 0.0, 0.0, ""])
+
+        return single_dart_stat_row
+
+
 
     @staticmethod
     def _configure_table_columns(table: ttk.Treeview, columns: dict) -> None:
