@@ -321,7 +321,8 @@ class Statistics(ttk.LabelFrame):
         """Reset statistics"""
         for stat_field in self._stat_fields:
             stat_field.value.config(text=stat_field.initial_value)
-
+        self.parent.throw_history_table.single_dart_stat_row.item("I001", values=(
+            "AVG:", 0.0, 0.0, 0.0, ""))
 
 class StatField():
     """Class for a statistic value shown in Statistics"""
