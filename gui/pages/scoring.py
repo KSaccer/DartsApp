@@ -67,6 +67,24 @@ class Scoring(ttk.Frame):
         
         self._created = True
 
+    @staticmethod
+    def convert_score(score: str) -> tuple:
+        """Convert score string to int. Return score string and score int 
+        as a tuple.
+        For example T20 -> ("T20", 60) or D5 -> ("D5", 10)"""
+        if not isinstance(score, str):
+            score = str(score)
+        converted_score = None
+        if score[0] == "D":
+            converted_score = int(score[1:]) * 2
+        elif score[0] == "T":
+            converted_score = int(score[1:]) * 3
+        elif score in ["B", "R"]:
+            converted_score = 0
+        else:
+            converted_score = int(score)
+        return (score, converted_score)
+
 
 class PageTitle(ttk.Frame):
     """Class for page title"""
@@ -190,23 +208,14 @@ class ScoreEntry(ttk.Entry):
 
     def get_and_convert(self) -> tuple:
         """Get score string, convert it to int, return both as tuple,
-        or an empty tuple, when entry field is empty.
+        or an empty tuple, when entry is invalid.
         For example T20 -> ("T20", 60) or D5 -> ("D5", 10)"""
         score = super().get().strip().upper()
         if not self.validate(score):
             return ()
-        
-        if score[0] == "D":
-            converted_score = int(score[1:]) * 2
-        elif score[0] == "T":
-            converted_score = int(score[1:]) * 3
-        elif score in ["B", "R"]:
-            converted_score = 0
         else:
-            converted_score = int(score)
-        return (score, 
-                converted_score)
-    
+            return Scoring.convert_score(score)
+        
     def validate(self, value: str) -> bool:
         """Check if entered score is a valid darts score"""
         if value.upper() not in self.VALID_ENTRIES:
@@ -224,6 +233,7 @@ class Statistics(ttk.LabelFrame):
     """Class for main statistics shown during a scoring session"""
     def __init__(self, parent, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
+        self.parent = parent
         self.rowconfigure((0, 1, 2, 3, 4), weight=1)
         self.columnconfigure((0, 1), weight=1)
         self.avg = StatField(self, "Average:", "0.0", 0)
@@ -235,7 +245,8 @@ class Statistics(ttk.LabelFrame):
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
                        score: str, current_max: str, 
-                       trebleless_visits: str) -> None:
+                       trebleless_visits: str, dart_avg_1: str, 
+                       dart_avg_2: str, dart_avg_3: str) -> None:
         """Set values of statistics shown during a scoring session"""
         self.avg.value.config(text=avg)
         self.darts_thrown.value.config(text=darts_thrown)
@@ -250,6 +261,14 @@ class Statistics(ttk.LabelFrame):
             self.trebleless_visits,
         ]
 
+        self._set_single_dart_averages(dart_avg_1, dart_avg_2, dart_avg_3)
+
+    def _set_single_dart_averages(self, dart_avg_1: str, dart_avg_2: str, 
+                                  dart_avg_3: str) -> None:
+        """Set values of single dart average fields"""
+        self.parent.throw_history_table.single_dart_stat_row.item("I001", values=(
+            "AVG:", dart_avg_1, dart_avg_2, dart_avg_3))
+
     def calculate_statistics(self) -> dict:
         """Get throws from history table, calculate statistics then
         return them as a dictionary"""
@@ -258,8 +277,12 @@ class Statistics(ttk.LabelFrame):
         current_max = 0
         score = 0
         nr_of_trebleless_visits = 0
+        dart_avg_1, dart_avg_2, dart_avg_3 = 0, 0, 0
         for throw in throws:
             score += throw[-1]
+            dart_avg_1 += Scoring.convert_score(throw[1])[1]
+            dart_avg_2 += Scoring.convert_score(throw[2])[1]
+            dart_avg_3 += Scoring.convert_score(throw[3])[1]
             if throw[-1] > current_max:
                 current_max = throw[-1]
             else:
@@ -271,6 +294,9 @@ class Statistics(ttk.LabelFrame):
                 nr_of_trebleless_visits += 1
             else:
                 pass
+        dart_avg_1 /= (darts_thrown / 3)
+        dart_avg_2 /= (darts_thrown / 3)
+        dart_avg_3 /= (darts_thrown / 3)
 
         return {
             "avg": f'{score / darts_thrown * 3:.1f}',
@@ -279,7 +305,10 @@ class Statistics(ttk.LabelFrame):
             "current_max": f'{current_max}',
             "trebleless_visits": f'{nr_of_trebleless_visits 
                                     / (darts_thrown / 3) 
-                                    * 100:.1f}%'
+                                    * 100:.1f}%',
+            "dart_avg_1": f'{dart_avg_1:.1f}',
+            "dart_avg_2": f'{dart_avg_2:.1f}',
+            "dart_avg_3": f'{dart_avg_3:.1f}',
         }
         
     def update_statistics(self) -> None:
@@ -408,7 +437,7 @@ class ThrowHistoryTable(ttk.LabelFrame):
         for column in columns:
             single_dart_stat_row.column(column, width=80, anchor=tk.CENTER)
         single_dart_stat_row.insert("", tk.END, values=["AVG:", 0.0, 0.0, 0.0, ""])
-
+        
         return single_dart_stat_row
 
 
