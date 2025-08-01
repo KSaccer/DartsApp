@@ -47,6 +47,7 @@ class PlotSelector(ttk.Frame):
         "Nr of darts thrown": NrOfDarts(),
         "Nr of 180s/171s": NrOf180s(),
         "Trebleless ratio": PercentageOfTreblelessVisits(),
+        "Averages and Sessions": AveragesAndSessions(),
     }
 
     sampling_rules = {
@@ -69,7 +70,7 @@ class PlotSelector(ttk.Frame):
         self.plot_type["values"] = list(PlotSelector.plot_strategies.keys())
         self.plot_type["state"] = "readonly"
         self.plot_type.grid(row=0, column=1, sticky="w")
-        self.plot_type.current(0)
+        self.plot_type.current(5)
 
         time_scale_label = ttk.Label(self, text="Time Scale: ")
         time_scale_label.grid(row=0, column=2, sticky="e")
@@ -100,7 +101,7 @@ class PlotSelector(ttk.Frame):
 class PlotCanvas(ttk.Frame):
     """Frame for Plot"""
 
-    default_strategy = ThreeDartAvg()
+    default_strategy = AveragesAndSessions()
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Construct PlotCanvas and create default average plot"""

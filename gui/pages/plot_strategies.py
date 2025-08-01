@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import datetime
+from typing import TYPE_CHECKING, Tuple
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,11 +10,14 @@ import seaborn as sns
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure, Axes
 
+if TYPE_CHECKING:
+    from db.database import DataBase
+
 
 class PlotStrategy(ABC):
     """Strategy Interface for plot builder algorithms"""
 
-    def build_plot(self, db: DataBase, sampling_rule: str) -> (Figure, Axes):
+    def build_plot(self, db: DataBase, sampling_rule: str) -> Tuple[Figure, Axes]:
         """Execute plot builder process"""
         df = self._create_df(db, self.sql_script, sampling_rule)
         plt.close('all')
@@ -23,14 +27,14 @@ class PlotStrategy(ABC):
         return (fig, ax)
 
     @abstractmethod
-    def _create_df(self, db: DataBase, sql_script: str) -> None:
+    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> None:
         pass
 
     @abstractmethod
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         pass
 
-    def _format_plot_content(self, fig, ax, sampling_rule) -> (Figure, Axes):
+    def _format_plot_content(self, fig, ax, sampling_rule) -> Tuple[Figure, Axes]:
         """Format plot axes and appearance"""
         if sampling_rule == "YS":
             ax.xaxis.set_major_locator(mdates.YearLocator())
@@ -63,7 +67,7 @@ class ThreeDartAvg(PlotStrategy):
         conn.close()
         return df
     
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -105,7 +109,7 @@ class NrOfSessions(PlotStrategy):
         conn.close()
         return df
 
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -137,7 +141,7 @@ class NrOfDarts(PlotStrategy):
         conn.close()
         return df
 
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -169,7 +173,7 @@ class NrOf180s(PlotStrategy):
         conn.close()
         return df
 
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -201,7 +205,7 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         conn.close()
         return df
 
-    def _create_plot_content(self, df: pd.DataFrame) -> (Figure, Axes):
+    def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
         fig, ax = plt.subplots(1, 1)
@@ -220,6 +224,78 @@ class PercentageOfTreblelessVisits(PlotStrategy):
                         y=df_smooth.trebleless / df_smooth.visits * 100, 
                         color="tab:orange", ax=ax
                         )
+        return (fig, ax)
+
+
+class AveragesAndSessions(PlotStrategy):
+    """Strategy for combined plot of averages and nr of sessions"""
+
+    sql_avg_script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+        "sql", 
+        "avg.sql")
+    
+    sql_sessions_script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+        "sql", 
+        "nr_of_games.sql")
+
+    def build_plot(self, db: "DataBase", sampling_rule: str) -> "Tuple[Figure, Axes]":
+        """Execute plot builder process"""
+        df = self._create_df(db, "", sampling_rule)  # sql_script is not used
+        plt.close('all')
+        fig, ax = self._create_plot_content(df)
+        fig, ax = self._format_plot_content(fig, ax, sampling_rule)
+        fig.tight_layout()
+        return (fig, ax)
+
+    def _create_df(self, db: "DataBase", sql_script: str, sampling_rule: str) -> pd.DataFrame:
+        """Create the DataFrame by connecting to the database and running
+        the SQL script"""
+        conn = sqlite3.connect(db.db_path)
+        
+        with open(self.sql_avg_script, "r") as query:
+            df_avg = pd.read_sql_query(query.read(), conn, 
+                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        df_avg = df_avg.set_index("date")
+        
+        with open(self.sql_sessions_script, "r") as query:
+            df_sessions = pd.read_sql_query(query.read(), conn, 
+                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        df_sessions = df_sessions.set_index("date")
+
+        df = pd.merge(df_avg, df_sessions, on="date", how="outer").fillna(0)
+        df = df.resample(sampling_rule).sum()
+        
+        conn.close()
+        return df
+    
+    def _create_plot_content(self, df: pd.DataFrame) -> "Tuple[Figure, Axes]":
+        """Set up plot and create curves"""
+        # Figure setup
+        fig, ax = plt.subplots(1, 1)
+        fig.tight_layout(h_pad=5)
+        # Creating plot
+        sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
+                        color="tab:blue", marker='o', ax=ax)
+        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+                        color="lightgray", ax=ax)
+        ax.lines[0].set_linestyle("--")
+        try:
+            df_smooth = df.resample("D").interpolate(method="quadratic")
+        except ValueError:
+            df_smooth = df
+        sns.lineplot(x=df_smooth.index, 
+                        y=df_smooth.overall_score / df_smooth.visits, 
+                        color="tab:orange", ax=ax
+                        )
+        ax.set_ylabel("Three Dart Average")
+
+        ax2 = ax.twinx()
+        sns.barplot(data=df, x=df.index, y="nr_of_games", ax=ax2,
+                    native_scale=True, color="tab:green", edgecolor="darkgreen", alpha=0.5)
+        ax2.bar_label(ax2.containers[0], fontsize=10)
+        ax2.set_ylabel("Number of Sessions")
         return (fig, ax)
 
 
