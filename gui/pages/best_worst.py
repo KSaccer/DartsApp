@@ -109,9 +109,10 @@ class BestWorstSettings(ttk.LabelFrame):
                         sum
                         FROM games
                         JOIN throws ON games.game_id=throws.game_id
-                        WHERE date BETWEEN "{str(start_date)}" AND "{str(end_date)}";"""
+                        WHERE date BETWEEN ? AND ?;"""
         
         df = pd.read_sql_query(sql_script, conn, 
+                               params=(str(start_date), str(end_date)),
                                parse_dates={"date": {"format": "%Y-%m-%d"}})
         return df
     
