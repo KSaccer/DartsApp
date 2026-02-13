@@ -243,6 +243,13 @@ class Statistics(ttk.LabelFrame):
         self.score = StatField(self, "Score:", "0", 2)
         self.current_max = StatField(self, "Current maximum:", "0", 3)
         self.trebleless_visits = StatField(self, "Trebleless visits: ", "0.0 %", 4)
+        self._stat_fields = [
+            self.avg,
+            self.darts_thrown,
+            self.score,
+            self.current_max,
+            self.trebleless_visits,
+        ]
 
     # keyword args without default values
     def set_statistics(self, *, avg: str, darts_thrown: str,
@@ -255,14 +262,6 @@ class Statistics(ttk.LabelFrame):
         self.score.value.config(text=score)
         self.current_max.value.config(text=current_max)
         self.trebleless_visits.value.config(text=trebleless_visits)
-        self._stat_fields = [
-            self.avg,
-            self.darts_thrown,
-            self.score,
-            self.current_max,
-            self.trebleless_visits,
-        ]
-
         self._set_single_dart_averages(dart_avg_1, dart_avg_2, dart_avg_3)
 
     def _set_single_dart_averages(self, dart_avg_1: str, dart_avg_2: str, 
