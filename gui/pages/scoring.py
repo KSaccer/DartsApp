@@ -39,7 +39,7 @@ class Scoring(ttk.Frame):
         # Initialize database
         self.db = db
         # Initialize Game
-        self.game = Game(self.db.last_game_id + 1)
+        self.game = Game(self.db.get_last_game_id() + 1)
         # populating widgets
         self.create_gui()
 
@@ -366,29 +366,33 @@ class ButtonsFrame(ttk.LabelFrame):
         self.parent.game.start = None
 
     def finish(self) -> None:
-        """Insert data into database and close application"""
+        """Insert data into database and start new session"""
+        if not self.parent.game.start:
+            # Nothing to save
+            return
+
         # Insert game
-        if self.parent.game.start:
-            self.parent.game.end = datetime.now()
-            game_data = (
-                self.parent.game.game_id,
-                self.parent.game.start,
-                self.parent.game.end,
-                self.parent.game.game_type
-                )
-            self.parent.db.insert_game(game_data)
+        self.parent.game.end = datetime.now()
+        game_data = (
+            self.parent.game.game_id,
+            self.parent.game.start,
+            self.parent.game.end,
+            self.parent.game.game_type
+            )
+        self.parent.db.insert_game(game_data)
 
         # Insert throws
         for value in self.parent.throw_history_table.get_records():
             throw_data = tuple(value[1::])
-            self.parent.db.insert_data(throw_data)
+            record_to_insert =(self.parent.game.game_id,) + throw_data
+            self.parent.db.insert_data(record_to_insert)
 
         # Backup database
         self.parent.db.backup_database()
         
         # Start new game
         self.restart()
-        self.parent.game.game_id += 1
+        self.parent.game = Game(self.parent.db.get_last_game_id() + 1)
 
 
 class ThrowHistoryTable(ttk.LabelFrame):
