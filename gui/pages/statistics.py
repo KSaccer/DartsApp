@@ -20,7 +20,7 @@ class StatPage(ttk.Frame):
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, sticky="n")
         
-        if self.db.last_game_id > 0:
+        if self.db.get_last_game_id() > 0:
             self.plot_selector = PlotSelector(self)
             self.plot_selector.grid(row=1, column=0, sticky="news")
 
