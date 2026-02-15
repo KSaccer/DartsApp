@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Tuple
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-import sqlite3
 import seaborn as sns
 from abc import ABC, abstractmethod
 from matplotlib.figure import Figure, Axes
@@ -58,13 +57,11 @@ class ThreeDartAvg(PlotStrategy):
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn, 
+            df = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        conn.close()
         return df
     
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -100,13 +97,11 @@ class NrOfSessions(PlotStrategy):
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn, 
+            df = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        conn.close()
         return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -132,13 +127,11 @@ class NrOfDarts(PlotStrategy):
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn, 
+            df = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        conn.close()
         return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -164,13 +157,11 @@ class NrOf180s(PlotStrategy):
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn, 
+            df = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        conn.close()
         return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -196,13 +187,11 @@ class PercentageOfTreblelessVisits(PlotStrategy):
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), conn, 
+            df = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
-        conn.close()
         return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -252,22 +241,20 @@ class AveragesAndSessions(PlotStrategy):
     def _create_df(self, db: "DataBase", sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
         the SQL script"""
-        conn = sqlite3.connect(db.db_path)
         
         with open(self.sql_avg_script, "r") as query:
-            df_avg = pd.read_sql_query(query.read(), conn, 
+            df_avg = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df_avg = df_avg.set_index("date")
         
         with open(self.sql_sessions_script, "r") as query:
-            df_sessions = pd.read_sql_query(query.read(), conn, 
+            df_sessions = pd.read_sql_query(query.read(), db.db_conn, 
                                    parse_dates={"date": {"format": "%Y-%m-%d"}})
         df_sessions = df_sessions.set_index("date")
 
         df = pd.merge(df_avg, df_sessions, on="date", how="outer").fillna(0)
         df = df.resample(sampling_rule).sum()
         
-        conn.close()
         return df
     
     def _create_plot_content(self, df: pd.DataFrame) -> "Tuple[Figure, Axes]":

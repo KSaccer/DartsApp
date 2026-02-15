@@ -1,5 +1,4 @@
 import pandas as pd
-import sqlite3
 import tkinter as tk
 import tkinter.ttk as ttk
 from datetime import date
@@ -101,8 +100,6 @@ class BestWorstSettings(ttk.LabelFrame):
     
     def _create_best_worst_dataframe(self, start_date: date, end_date: date) -> pd.DataFrame:
         """Read data from database, that are between start_date and end_date"""
-        conn = sqlite3.connect(self.master.db.db_path)
-        
         sql_script = f"""SELECT STRFTIME("%Y-%m-%d", games.game_start) AS date, 
                         throws.game_id, 
                         throws.throw_1, throws.throw_2, throws.throw_3, 
@@ -111,7 +108,7 @@ class BestWorstSettings(ttk.LabelFrame):
                         JOIN throws ON games.game_id=throws.game_id
                         WHERE date BETWEEN ? AND ?;"""
         
-        df = pd.read_sql_query(sql_script, conn, 
+        df = pd.read_sql_query(sql_script, self.master.db.db_conn, 
                                params=(str(start_date), str(end_date)),
                                parse_dates={"date": {"format": "%Y-%m-%d"}})
         return df
