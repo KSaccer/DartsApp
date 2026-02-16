@@ -543,6 +543,7 @@ class EntryPopup(ScoreEntry):
         self.bind("<Control-a>", lambda event: self.selection_range(0, 'end'))
         self.bind("<Escape>", lambda event: self.destroy())
         self.bind("<Tab>", lambda event: self.tab_pressed())
+        self.bind("<Shift-Tab>", lambda event: self.shift_tab_pressed())
         self.bind("<FocusOut>", lambda event: self.destroy())
 
     def on_return(self, event) -> 1 | -1:
@@ -584,6 +585,17 @@ class EntryPopup(ScoreEntry):
             if self.column_id != 3:
                 self.parent.master._edit_cell(event=None, row=self.row, 
                                             column=f"#{self.column_id + 2}")
+        else:
+            return "break"
+
+    def shift_tab_pressed(self) -> None:
+        """Create the previous EntryPopup when shift+tab is pressed and
+        the updated score is valid"""
+        success = self.on_return(event=None)
+        if success == 1:
+            if self.column_id != 1:
+                self.parent.master._edit_cell(event=None, row=self.row,
+                                            column=f"#{self.column_id}")
         else:
             return "break"
         
