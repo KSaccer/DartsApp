@@ -582,7 +582,7 @@ class EntryPopup(ScoreEntry):
         success = self.on_return(event=None)
         if success == 1:
             if self.column_id != 3:
-                self.parent.master.edit_cell(event=None, row=self.row, 
+                self.parent.master._edit_cell(event=None, row=self.row, 
                                             column=f"#{self.column_id + 2}")
         else:
             return "break"
