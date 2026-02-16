@@ -275,10 +275,25 @@ class Statistics(ttk.LabelFrame):
         return them as a dictionary"""
         throws = list(self.master.throw_history_table.get_records())
         darts_thrown = len(throws) * 3
+
+        # Guard clause: return defaults if no throws recorded
+        if darts_thrown == 0:
+            return {
+                "avg": "0.0",
+                "darts_thrown": "0",
+                "score": "0",
+                "current_max": "0",
+                "trebleless_visits": "0.0%",
+                "dart_avg_1": "0.0",
+                "dart_avg_2": "0.0",
+                "dart_avg_3": "0.0",
+            }
+
         current_max = 0
         score = 0
         nr_of_trebleless_visits = 0
         dart_avg_1, dart_avg_2, dart_avg_3 = 0, 0, 0
+
         for throw in throws:
             score += throw[-1]
             dart_avg_1 += Scoring.convert_score(throw[1])[1]
@@ -286,15 +301,12 @@ class Statistics(ttk.LabelFrame):
             dart_avg_3 += Scoring.convert_score(throw[3])[1]
             if throw[-1] > current_max:
                 current_max = throw[-1]
-            else:
-                pass
             is_treble_thrown = any([True if str(single_throw)[0] == "T" 
                                     else False 
                                     for single_throw in throw[1:4]])
             if not is_treble_thrown:
                 nr_of_trebleless_visits += 1
-            else:
-                pass
+
         dart_avg_1 /= (darts_thrown / 3)
         dart_avg_2 /= (darts_thrown / 3)
         dart_avg_3 /= (darts_thrown / 3)
