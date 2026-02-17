@@ -3,6 +3,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from datetime import date
 from tkcalendar import DateEntry
+
+from gui.widgets.custom_popup import CustomPopup
 from ..constants import *
 
 
@@ -84,8 +86,20 @@ class BestWorstSettings(ttk.LabelFrame):
         start_date, end_date, nr_of_visits = self.get_settings()
         # create DataFrame acc. to set date interval
         best_worse_dataframe = self._create_best_worst_dataframe(start_date, end_date)
+        
         # find best and worst performance
-        best, worst = self._find_best_and_worst(best_worse_dataframe, nr_of_visits)
+        best, worst, nr_of_games = self._find_best_and_worst(best_worse_dataframe, nr_of_visits)
+        
+        if best_worse_dataframe.empty or nr_of_games == 0:
+            # Show message instead of crashing
+            CustomPopup(
+                popup_type="warning",
+                title="No data",
+                message="No scoring data found with the selected parameters.",
+                callback_fct=None
+            )
+            return
+
         # update gui
         self.master.best_worst_avg_display._update_best_worst_values(best[0], worst[0])
         self.master.table_for_best.add_records(best[1])
@@ -117,17 +131,37 @@ class BestWorstSettings(ttk.LabelFrame):
     def _find_best_and_worst(self, df: pd.DataFrame, rolling_avg_window) -> tuple:
         """Find best and worst 3-dart averages using the given window
         for the rolling average"""
+
+        # Guard: handle empty DataFrame
+        if df.empty:
+            empty_df = pd.DataFrame(columns=df.columns)
+            return ((0, empty_df), (0, empty_df), 0)
+        
+        # initialize return values
         best_average_overall, worst_average_overall = 0, 1000
-        game_id_min, game_id_max = df.game_id.min(), df.game_id.max()
+        best_throws = pd.DataFrame(columns=df.columns)
+        worst_throws = pd.DataFrame(columns=df.columns)
+
+        # find overall best and worst averages
+        game_id_min, game_id_max = int(df.game_id.min()), int(df.game_id.max())
+        nr_of_relevant_games = 0
         for game_id in range(game_id_min, game_id_max + 1):
             
             df_one_game = df[df["game_id"] == game_id]
+
+            if len(df_one_game) < rolling_avg_window:
+                continue    # Skip games with fewer throws than the window
+
             df_one_game_rolled = df_one_game["sum"].rolling(rolling_avg_window).mean()
             
             best_average = df_one_game_rolled.max()
-            best_average_row_id = df_one_game_rolled.idxmax() 
-
             worst_average = df_one_game_rolled.min()
+
+            # Skip NaN results
+            if pd.isna(best_average) or pd.isna(worst_average):
+                continue
+
+            best_average_row_id = df_one_game_rolled.idxmax() 
             worst_average_row_id = df_one_game_rolled.idxmin()
 
             if best_average > best_average_overall:
@@ -140,12 +174,11 @@ class BestWorstSettings(ttk.LabelFrame):
                 worst_throws = df.iloc[
                     worst_average_row_id - rolling_avg_window + 1 : worst_average_row_id + 1
                     ]
+            nr_of_relevant_games += 1
 
         return ((best_average_overall, best_throws), 
-                (worst_average_overall, worst_throws))
-  
-    
-
+                (worst_average_overall, worst_throws),
+                nr_of_relevant_games)
         
 
 class PageTitle(ttk.Frame):
