@@ -4,14 +4,19 @@ from ..constants import *
 
 
 class CustomPopup(tk.Toplevel):
-    """Popup message to confirm to quit.
-    Used instead of tk messaagebox, because that always centered on screen
+    """Custom Popup message class.
+    Used instead of tk messagebox, because that always centered on screen
     instead of application, even though parent kwarg was set"""
-    def __init__(self, title, message, callback_fct, **kwargs) -> None:
-        super().__init__(**kwargs)
-        """Construct the QuitPopup widget and make it a modal window.
+    VALID_POPUP_TYPES = {"information", "warning", "error", "question"}
+
+    def __init__(self, *, popup_type="information", title="", message="", callback_fct=None, **kwargs) -> None:
+        """Construct the CustomPopup widget and make it a modal window.
         Main window remains inactive until this one closed."""
+        super().__init__(**kwargs)
         self.message = message
+        if popup_type not in self.VALID_POPUP_TYPES:
+            popup_type = "information"
+        self.popup_type = popup_type
         self.title(title)
         self.callback_fct = callback_fct
         self.resizable(False, False)
@@ -33,24 +38,28 @@ class CustomPopup(tk.Toplevel):
         self.geometry(f"{width}x{height}+{pos_x}+{pos_y}")
 
     def _construct_widgets(self) -> None:
-        """Construct the elements of the QuitPopup"""
+        """Construct the elements of the CustomPopup"""
         self.rowconfigure((0, 1, 2), weight=1)
         self.columnconfigure((0, 1), weight=1)
-        icon = tk.Label(self, image="::tk::icons::question", background="white")
+        icon = tk.Label(self, image=f"::tk::icons::{self.popup_type}", background="white")
         icon.grid(row=0, column=0, rowspan=2, sticky="news")
-        label = tk.Label(self, text=self.message, background="white", font=FONT_DEFAULT)
+        label = tk.Label(self, text=self.message, background="white", 
+                         font=FONT_DEFAULT, wraplength=300, justify="left")
         label.grid(row=0, column=1, rowspan=2, columnspan=2, sticky="news")
         ok = ttk.Button(self, text="OK", command=self._callback)
-        ok.grid(row=2, column=1, sticky="e")
-        cancel = ttk.Button(self, text="Cancel", command=self.destroy)
-        cancel.grid(row=2, column=2, padx=(10, 10), sticky="e") 
+        ok.grid(row=2, column=1, padx=(10, 10), sticky="e")
+        if self.popup_type == "question":
+            cancel = ttk.Button(self, text="Cancel", command=self.destroy)
+            cancel.grid(row=2, column=2, padx=(0, 10), sticky="e") 
+        self.bind("<Escape>", lambda e: self.destroy())
         ok.focus()
 
     def _callback(self) -> None:
-        """Callback funtcion for the yes button."""
+        """Callback function for the OK button."""
         # Need to be destroyed first (quit is paused until destroy)
         self.destroy()
-        self.callback_fct()
+        if self.callback_fct is not None:
+            self.callback_fct()
 
 
 if __name__ == "__main__":

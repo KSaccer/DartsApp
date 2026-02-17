@@ -87,7 +87,12 @@ class DartsApp(tk.Tk):
 
     def close_app(self) -> None:
         """Show messagebox to confirm to quit, then close application"""
-        CustomPopup("Confirmation", "Do you really want to close the application?", self._shutdown)
+        CustomPopup(
+            popup_type="question",
+            title="Confirmation",
+            message="Do you really want to close the application?",
+            callback_fct=self._shutdown
+        )
 
     def _shutdown(self) -> None:
         """Clean up resources and quit the application"""

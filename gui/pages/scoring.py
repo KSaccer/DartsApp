@@ -366,9 +366,13 @@ class ButtonsFrame(ttk.LabelFrame):
         restart_button.grid(row=0, column=1, padx=10, pady=10, sticky="news")
 
     def restart_clicked(self):
-        CustomPopup("Confirmation", "Do you really want to restart the session?\n"
-                        "Scores and statistics will be discarded!",
-                        self.restart)
+        CustomPopup(
+            popup_type="question",
+            title="Confirmation",
+            message="Do you really want to restart the session?\n"
+                    "Scores and statistics will be discarded!",
+            callback_fct=self.restart
+        )
 
     def restart(self) -> None:
         """Reset session - clear statistics and table records"""
