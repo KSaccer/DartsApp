@@ -93,8 +93,9 @@ class BestWorstSettings(ttk.LabelFrame):
 
     def get_settings(self) -> tuple:
         """Read in settings into a tuple"""
-        start_date = self.start_date_entry.get_date()
-        end_date = self.end_date_entry.get_date()
+        dates = (self.start_date_entry.get_date(), self.end_date_entry.get_date())
+        start_date = min(dates)
+        end_date = max(dates)
         nr_of_visits = int(self.nr_of_visits_entry.get())
         return (start_date, end_date, nr_of_visits)
     
@@ -118,7 +119,6 @@ class BestWorstSettings(ttk.LabelFrame):
         for the rolling average"""
         best_average_overall, worst_average_overall = 0, 1000
         game_id_min, game_id_max = df.game_id.min(), df.game_id.max()
-         
         for game_id in range(game_id_min, game_id_max + 1):
             
             df_one_game = df[df["game_id"] == game_id]
