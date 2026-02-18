@@ -71,19 +71,48 @@ class BestWorstSettings(ttk.LabelFrame):
         self.nr_of_visits_label = ttk.Label(self, text="Nr of visits:")
         self.nr_of_visits_label.grid(row=2, column=0, sticky="ws", 
                                      padx=10, pady=(5, 10))
-        self.nr_of_visits_entry = ttk.Entry(self, )
-        self.nr_of_visits_entry.grid(row=2, column=1, sticky="ews", 
+        
+        vcmd = (self.register(self.validate), "%P")
+        ivcmd = (self.register(self.on_invalid), )
+        self.nr_of_visits_spinbox = ttk.Spinbox(
+            self, from_=1, to=100, increment=1, width=5,
+            validate="key", validatecommand=vcmd, invalidcommand=ivcmd,
+        )
+        self.nr_of_visits_spinbox.grid(row=2, column=1, sticky="w", 
                                      padx=10, pady=(5, 10))
-        self.nr_of_visits_entry.insert(0, "7")
+        self.nr_of_visits_spinbox.delete(0, tk.END)
+        self.nr_of_visits_spinbox.insert(0, "7")
 
         self.analyze_button = ttk.Button(self, text="Analyze", 
                                          command=self.analyze_button_clicked)
         self.analyze_button.grid(row=3, column=1, sticky="news", 
                                  padx=10, pady=(5, 10))
+        
+    def validate(self, value: str) -> bool:
+        """Check if entered score is a valid darts score"""
+        if value == "":
+            return True
+        try:
+            int_value = int(value)
+            if int_value < 1 or int_value > 100:
+                return False
+        except ValueError:
+            return False
+        self.nr_of_visits_spinbox.config(foreground="black")
+        return True
+    
+    def on_invalid(self) -> None:
+        """Executed when entry validation returns False.
+        Change text color to red"""
+        if self.nr_of_visits_spinbox.get():
+            self.nr_of_visits_spinbox.config(foreground="red")
 
     def analyze_button_clicked(self):
         # read in settings
-        start_date, end_date, nr_of_visits = self.get_settings()
+        settings = self.get_settings()
+        if settings is None:
+            return
+        start_date, end_date, nr_of_visits = settings
         # create DataFrame acc. to set date interval
         best_worse_dataframe = self._create_best_worst_dataframe(start_date, end_date)
         
@@ -110,7 +139,18 @@ class BestWorstSettings(ttk.LabelFrame):
         dates = (self.start_date_entry.get_date(), self.end_date_entry.get_date())
         start_date = min(dates)
         end_date = max(dates)
-        nr_of_visits = int(self.nr_of_visits_entry.get())
+        try:
+            nr_of_visits = int(self.nr_of_visits_spinbox.get())
+            if nr_of_visits < 1:
+                raise ValueError
+        except ValueError:
+            CustomPopup(
+                popup_type="warning",
+                title="Invalid input",
+                message="Nr of visits must be a positive integer.",
+                callback_fct=None
+            )
+            return None
         return (start_date, end_date, nr_of_visits)
     
     def _create_best_worst_dataframe(self, start_date: date, end_date: date) -> pd.DataFrame:
