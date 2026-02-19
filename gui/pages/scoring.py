@@ -403,7 +403,12 @@ class ButtonsFrame(ttk.LabelFrame):
             self.parent.db.insert_data(record_to_insert)
 
         # Backup database
-        self.parent.db.backup_database()
+        if not self.parent.db.backup_database():
+            CustomPopup(
+                popup_type="error",
+                title="Error",
+                message="Failed to backup the database!"
+            )
         
         # Start new game
         self.restart()

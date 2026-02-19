@@ -73,13 +73,24 @@ class DataBase():
             )
         self.db_conn.commit()
 
-    def backup_database(self) -> None:
+    def backup_database(self) -> bool:
         """Create a copy of the db with a timestamp in the filename in the 
-        folder defined by the BACKUP_PATH constant"""
-        current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"{Path(self.db_path).stem}_{current_datetime}.db"
-        copy(self.db_path, os.path.join(BACKUP_PATH, backup_file))
+        folder defined by the BACKUP_PATH constant
+        Return True if backup was successful, False otherwise"""
+        try:
+            # Ensure backup directory exists
+            os.makedirs(BACKUP_PATH, exist_ok=True)
 
+            # Create backup filename with timestamp            
+            current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = f"{Path(self.db_path).stem}_{current_datetime}.db"
+            backup_full_path = os.path.join(BACKUP_PATH, backup_file)
+            copy(self.db_path, backup_full_path)
+            return True
+
+        except OSError as e:
+            print(f"Error during backup: {e}")
+            return False
 
 
 if __name__ == "__main__":
