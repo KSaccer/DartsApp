@@ -3,13 +3,21 @@ import os
 from datetime import datetime
 from pathlib import Path
 from shutil import copy
+import config
 
 SQL_SCRIPT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 
     "sql", 
     "db_initialize.sql")
 
-BACKUP_PATH = os.path.join("D:", os.sep, "Dolgok", "Darts")
+def _get_backup_path() -> str:
+    """Return the configured backup path, falling back to a portable default."""
+    cfg = config.load_config()
+    return cfg.get(
+        "database",
+        "backup_path",
+        fallback=config.DEFAULTS["database"]["backup_path"],
+    )
 
 class DataBase():
     """Class for handling darts score database"""
@@ -75,16 +83,18 @@ class DataBase():
 
     def backup_database(self) -> bool:
         """Create a copy of the db with a timestamp in the filename in the 
-        folder defined by the BACKUP_PATH constant
+        folder defined in configuration
         Return True if backup was successful, False otherwise"""
         try:
+            backup_path = _get_backup_path()
+
             # Ensure backup directory exists
-            os.makedirs(BACKUP_PATH, exist_ok=True)
+            os.makedirs(backup_path, exist_ok=True)
 
             # Create backup filename with timestamp            
             current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_file = f"{Path(self.db_path).stem}_{current_datetime}.db"
-            backup_full_path = os.path.join(BACKUP_PATH, backup_file)
+            backup_full_path = os.path.join(backup_path, backup_file)
             copy(self.db_path, backup_full_path)
             return True
 
