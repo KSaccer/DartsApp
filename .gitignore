@@ -10,3 +10,4 @@ darts_data.db
 .sandbox/
 
 config.ini
+/db/backups/
