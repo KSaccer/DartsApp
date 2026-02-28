@@ -83,7 +83,11 @@ class Menu(ttk.Frame):
         """Show the main frame of the given page.
         If page is None (Quit button), call the close_app function"""
         if page:
-            page.create_gui()
+            if not getattr(page, "_gui_created", False):
+                page.create_gui()
+            on_show = getattr(page, "on_show", None)
+            if callable(on_show):
+                on_show()
             page.tkraise()
         else:
             self.parent.close_app()
