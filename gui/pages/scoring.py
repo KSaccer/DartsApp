@@ -34,7 +34,7 @@ class Scoring(ttk.Frame):
         self.rowconfigure(2, weight=3)
         self.rowconfigure(3, weight=1)
         self.columnconfigure((0, 1), weight=1)
-        self._created = False
+        self._gui_created = False
 
         # Initialize database
         self.db = db
@@ -45,7 +45,7 @@ class Scoring(ttk.Frame):
 
     def create_gui(self) -> None:
         """Construct widgets of Scoring page"""
-        if self._created:
+        if self._gui_created:
             return
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, columnspan=2)
@@ -65,7 +65,7 @@ class Scoring(ttk.Frame):
         self.throw_history_table.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
         
-        self._created = True
+        self._gui_created = True
 
     @staticmethod
     def convert_score(score: str) -> tuple:

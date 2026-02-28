@@ -18,9 +18,12 @@ class BestWorst(ttk.Frame):
         self.rowconfigure(1, weight=3)
         self.rowconfigure(2, weight=15)
         self.columnconfigure((0, 1), weight=1)
+        self._gui_created = False
         
     def create_gui(self) -> None:
-        """Construct widgets of Statistics page"""
+        """Construct widgets of Best-Worst page."""
+        if self._gui_created:
+            return
         self.page_title = PageTitle(self)
         self.page_title.grid(row=0, column=0, columnspan=2, 
                              padx=10, pady=(10, 5), sticky="n")
@@ -41,6 +44,7 @@ class BestWorst(ttk.Frame):
         self.table_for_worst = BestWorstTable(self, text="Worst performance")
         self.table_for_worst.grid(row=2, column=1,
                                  padx=(5, 10), pady=(5, 10), sticky="news")
+        self._gui_created = True
         
 
 class BestWorstSettings(ttk.LabelFrame):
