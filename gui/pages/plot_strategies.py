@@ -1,9 +1,9 @@
 from __future__ import annotations
 import os
-import datetime
 from typing import TYPE_CHECKING, Tuple
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import pandas as pd
 import seaborn as sns
 from abc import ABC, abstractmethod
@@ -16,9 +16,16 @@ if TYPE_CHECKING:
 class PlotStrategy(ABC):
     """Strategy Interface for plot builder algorithms"""
 
+    COLOR_POINT = "#2A6FBB"
+    COLOR_RAW_LINE = "#B0B8C5"
+    COLOR_TREND = "#F28E2B"
+    COLOR_BAR = "#5A9E6F"
+    COLOR_BAR_EDGE = "#356D4A"
+
     def build_plot(self, db: DataBase, sampling_rule: str) -> Tuple[Figure, Axes]:
         """Execute plot builder process"""
         df = self._create_df(db, self.sql_script, sampling_rule)
+        sns.set_theme(style="whitegrid", context="notebook")
         plt.close('all')
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax, sampling_rule)
@@ -35,13 +42,25 @@ class PlotStrategy(ABC):
 
     def _format_plot_content(self, fig, ax, sampling_rule) -> Tuple[Figure, Axes]:
         """Format plot axes and appearance"""
+        if sampling_rule == "MS":
+            ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 4, 7, 10)))
         if sampling_rule == "YS":
             ax.xaxis.set_major_locator(mdates.YearLocator())
+        if sampling_rule == "D":
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=5, maxticks=8))
+
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
         ax.set_axisbelow(True)
-        ax.yaxis.grid(color='lightgray', linestyle='dashed')
+        ax.yaxis.grid(color="#DCE1E8", linestyle="-", linewidth=0.8)
+        ax.xaxis.grid(False)
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(ax.xaxis.get_major_locator()))
-        for label in ax.get_xticklabels():
-            label.set_rotation(90)
+        ax.tick_params(axis="x", labelrotation=0, labelsize=9, pad=4)
+        ax.tick_params(axis="y", labelsize=9)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#CAD2DE")
+        ax.spines["bottom"].set_color("#CAD2DE")
         ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
 
@@ -62,6 +81,31 @@ class PlotStrategy(ABC):
                 return s_daily.interpolate(method="time")
             except ValueError:
                 return s
+
+    @staticmethod
+    def _label_nonzero_bars(ax: Axes, values: pd.Series) -> None:
+        """Label bars sparsely to reduce visual clutter."""
+        if not ax.containers:
+            return
+
+        n = len(values)
+        step = 1 if n <= 14 else 2 if n <= 28 else 3
+        labels = []
+        for i, value in enumerate(values.fillna(0)):
+            if value <= 0 or i % step != 0:
+                labels.append("")
+            else:
+                labels.append(f"{int(round(value))}")
+        ax.bar_label(ax.containers[0], labels=labels, fontsize=9, padding=2, color="#28313C")
+
+    @staticmethod
+    def _set_range_subtitle(ax: Axes, df: pd.DataFrame) -> None:
+        """Set compact subtitle with covered date range."""
+        if df.empty:
+            return
+        start = df.index.min().strftime("%Y-%m-%d")
+        end = df.index.max().strftime("%Y-%m-%d")
+        ax.set_title(f"{start} to {end}", fontsize=9, color="#6D7785", pad=6)
 
 
 class ThreeDartAvg(PlotStrategy):
@@ -90,12 +134,16 @@ class ThreeDartAvg(PlotStrategy):
         # Creating plot
         avg = df.overall_score.div(df.visits.where(df.visits != 0))
         sns.scatterplot(x=df.index, y=avg,
-                        color="tab:blue", marker='o', ax=ax)
+                        color=self.COLOR_POINT, marker='o', s=28, edgecolor="white", linewidth=0.5, ax=ax)
         sns.lineplot(x=df.index, y=avg,
-                        color="lightgray", ax=ax)
-        ax.lines[0].set_linestyle("--")
+                        color=self.COLOR_RAW_LINE, linewidth=1.4, alpha=0.9, label="Observed", ax=ax)
+        if ax.lines:
+            ax.lines[0].set_linestyle("--")
         avg_smooth = self._smooth_daily_series(avg)
-        sns.lineplot(x=avg_smooth.index, y=avg_smooth, color="tab:orange", ax=ax)
+        sns.lineplot(x=avg_smooth.index, y=avg_smooth,
+                     color=self.COLOR_TREND, linewidth=2.4, label="Trend", ax=ax)
+        ax.legend(loc="upper left", frameon=False, fontsize=9)
+        self._set_range_subtitle(ax, df)
         return (fig, ax)
     
 
@@ -123,9 +171,12 @@ class NrOfSessions(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.barplot(df, x="date", y="nr_of_games", ax=ax, 
-                    native_scale=True, color="tab:blue", edgecolor="darkblue")
-        ax.bar_label(ax.containers[0], fontsize=10)
+        df_plot = df.reset_index()
+        sns.barplot(df_plot, x="date", y="nr_of_games", ax=ax,
+                    native_scale=True, color=self.COLOR_BAR, edgecolor=self.COLOR_BAR_EDGE, alpha=0.45)
+        ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        self._label_nonzero_bars(ax, df_plot["nr_of_games"])
+        self._set_range_subtitle(ax, df)
         return (fig, ax)
     
 
@@ -153,9 +204,12 @@ class NrOfDarts(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.barplot(df, x="date", y="darts_thrown", ax=ax,
-                    native_scale=True, color="tab:blue", edgecolor="darkblue")
-        ax.bar_label(ax.containers[0], fontsize=10)
+        df_plot = df.reset_index()
+        sns.barplot(df_plot, x="date", y="darts_thrown", ax=ax,
+                    native_scale=True, color=self.COLOR_BAR, edgecolor=self.COLOR_BAR_EDGE, alpha=0.45)
+        ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        self._label_nonzero_bars(ax, df_plot["darts_thrown"])
+        self._set_range_subtitle(ax, df)
         return (fig, ax)
 
 
@@ -183,9 +237,12 @@ class NrOf180s(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.barplot(df, x="date", y="visits_180", ax=ax,
-                    native_scale=True, color="tab:blue", edgecolor="darkblue")
-        ax.bar_label(ax.containers[0], fontsize=10)
+        df_plot = df.reset_index()
+        sns.barplot(df_plot, x="date", y="visits_180", ax=ax,
+                    native_scale=True, color=self.COLOR_BAR, edgecolor=self.COLOR_BAR_EDGE, alpha=0.45)
+        ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        self._label_nonzero_bars(ax, df_plot["visits_180"])
+        self._set_range_subtitle(ax, df)
         return (fig, ax)
 
 
@@ -215,12 +272,16 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         # Creating plot
         no_treble_pct = df.trebleless.mul(100).div(df.visits.where(df.visits != 0))
         sns.scatterplot(x=df.index, y=no_treble_pct,
-                        color="tab:blue", marker='o', ax=ax)
+                        color=self.COLOR_POINT, marker='o', s=28, edgecolor="white", linewidth=0.5, ax=ax)
         sns.lineplot(x=df.index, y=no_treble_pct,
-                        color="lightgray", ax=ax)
-        ax.lines[0].set_linestyle("--")
+                        color=self.COLOR_RAW_LINE, linewidth=1.4, alpha=0.9, label="Observed", ax=ax)
+        if ax.lines:
+            ax.lines[0].set_linestyle("--")
         no_treble_smooth = self._smooth_daily_series(no_treble_pct)
-        sns.lineplot(x=no_treble_smooth.index, y=no_treble_smooth, color="tab:orange", ax=ax)
+        sns.lineplot(x=no_treble_smooth.index, y=no_treble_smooth,
+                     color=self.COLOR_TREND, linewidth=2.4, label="Trend", ax=ax)
+        ax.legend(loc="upper left", frameon=False, fontsize=9)
+        self._set_range_subtitle(ax, df)
         return (fig, ax)
 
 
@@ -240,11 +301,13 @@ class AveragesAndSessions(PlotStrategy):
     def build_plot(self, db: "DataBase", sampling_rule: str) -> "Tuple[Figure, Axes]":
         """Execute plot builder process"""
         df = self._create_df(db, "", sampling_rule)  # sql_script is not used
+        sns.set_theme(style="whitegrid", context="notebook")
         plt.close('all')
-        fig, ax = self._create_plot_content(df)
-        fig, ax = self._format_plot_content(fig, ax, sampling_rule)
-        fig.tight_layout()
-        return (fig, ax)
+        fig, (ax_top, ax_bottom) = self._create_plot_content(df)
+        fig, ax_top = self._format_plot_content(fig, ax_top, sampling_rule)
+        fig, ax_bottom = self._format_plot_content(fig, ax_bottom, sampling_rule)
+        ax_top.tick_params(axis="x", labelbottom=False)
+        return (fig, ax_top)
 
     def _create_df(self, db: "DataBase", sql_script: str, sampling_rule: str) -> pd.DataFrame:
         """Create the DataFrame by connecting to the database and running
@@ -265,28 +328,37 @@ class AveragesAndSessions(PlotStrategy):
         
         return df
     
-    def _create_plot_content(self, df: pd.DataFrame) -> "Tuple[Figure, Axes]":
+    def _create_plot_content(self, df: pd.DataFrame) -> "Tuple[Figure, Tuple[Axes, Axes]]":
         """Set up plot and create curves"""
         # Figure setup
-        fig, ax = plt.subplots(1, 1)
-        fig.tight_layout(h_pad=5)
+        fig, (ax_top, ax_bottom) = plt.subplots(
+            2, 1, sharex=True, gridspec_kw={"height_ratios": [2, 1], "hspace": 0.04}
+        )
+        fig.subplots_adjust(left=0.07, right=0.985, top=0.95, bottom=0.10, hspace=0.06)
         # Creating plot
         avg = df.overall_score.div(df.visits.where(df.visits != 0))
         sns.scatterplot(x=df.index, y=avg,
-                        color="tab:blue", marker='o', ax=ax)
+                        color=self.COLOR_POINT, marker='o', s=28, edgecolor="white", linewidth=0.5, ax=ax_top)
         sns.lineplot(x=df.index, y=avg,
-                        color="lightgray", ax=ax)
-        ax.lines[0].set_linestyle("--")
+                        color=self.COLOR_RAW_LINE, linewidth=1.4, alpha=0.9, label="Observed", ax=ax_top)
+        if ax_top.lines:
+            ax_top.lines[0].set_linestyle("--")
         avg_smooth = self._smooth_daily_series(avg)
-        sns.lineplot(x=avg_smooth.index, y=avg_smooth, color="tab:orange", ax=ax)
-        ax.set_ylabel("Three Dart Average")
+        sns.lineplot(x=avg_smooth.index, y=avg_smooth,
+                     color=self.COLOR_TREND, linewidth=2.4, label="Trend", ax=ax_top)
+        ax_top.set_ylabel("Three Dart Average")
+        ax_top.legend(loc="upper left", frameon=False, fontsize=9)
 
-        ax2 = ax.twinx()
-        sns.barplot(data=df, x=df.index, y="nr_of_games", ax=ax2,
-                    native_scale=True, color="tab:green", edgecolor="darkgreen", alpha=0.5)
-        ax2.bar_label(ax2.containers[0], fontsize=10)
-        ax2.set_ylabel("Number of Sessions")
-        return (fig, ax)
+        df_plot = df.reset_index()
+        sns.barplot(data=df_plot, x="date", y="nr_of_games", ax=ax_bottom,
+                    native_scale=True, color=self.COLOR_BAR, edgecolor=self.COLOR_BAR_EDGE, alpha=0.45)
+        ax_bottom.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        self._label_nonzero_bars(ax_bottom, df_plot["nr_of_games"])
+        ax_bottom.set_ylabel("Number of Sessions")
+        ax_top.margins(x=0.01)
+        ax_bottom.margins(x=0.01)
+        self._set_range_subtitle(ax_top, df)
+        return (fig, (ax_top, ax_bottom))
 
 
 if __name__ == "__main__":
