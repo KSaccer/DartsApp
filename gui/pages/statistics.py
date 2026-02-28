@@ -14,19 +14,42 @@ class StatPage(ttk.Frame):
         self.db = db
         self.rowconfigure((0, 1, 2), weight=1)
         self.columnconfigure(0, weight=1)
+        self._title_created = False
+        self._gui_created = False
     
     def create_gui(self) -> None:
         """Construct widgets of Statistics page"""
-        self.page_title = PageTitle(self)
-        self.page_title.grid(row=0, column=0, sticky="n")
-        
-        if self.db.get_last_game_id() > 0:
-            self.plot_selector = PlotSelector(self)
-            self.plot_selector.grid(row=1, column=0, sticky="news")
+        if not self._title_created:
+            self.page_title = PageTitle(self)
+            self.page_title.grid(row=0, column=0, sticky="n")
+            self._title_created = True
 
-            self.plot_canvas = PlotCanvas(self)
-            self.plot_canvas.grid(row=2, column=0, sticky="news")
+        if self.db.get_last_game_id() <= 0:
+            return
+
+        if self._gui_created:
+            return
+
+        self.plot_selector = PlotSelector(self)
+        self.plot_selector.grid(row=1, column=0, sticky="news")
+        self.plot_canvas = PlotCanvas(self)
+        self.plot_canvas.grid(row=2, column=0, sticky="news")
         
+        self._gui_created = True
+
+    def _refresh_plot(self) -> None:
+        """Refresh plot based on current selector values."""
+        sampling_rule = PlotSelector.sampling_rules[self.plot_selector.time_scale.get()]
+        plot_strategy = PlotSelector.plot_strategies[self.plot_selector.plot_type.get()]
+        plot = Plot(self.db, plot_strategy, sampling_rule)
+        self.plot_canvas.add_plot(plot)
+        self.plot_canvas.canvas.draw()
+
+    def on_show(self) -> None:
+        """Refresh page data when page is shown."""
+        self.create_gui()
+        if self._gui_created:
+            self._refresh_plot()
 
 class PageTitle(ttk.Frame):
     """Class for page title"""
