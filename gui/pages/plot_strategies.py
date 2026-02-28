@@ -45,6 +45,24 @@ class PlotStrategy(ABC):
         ax.set(ylabel=None, xlabel=None)
         return (fig, ax)
 
+    @staticmethod
+    def _smooth_daily_series(series: pd.Series) -> pd.Series:
+        """Create a daily, smooth curve without spline overshoot artifacts."""
+        s = series.replace([float("inf"), -float("inf")], pd.NA).dropna()
+        if s.empty:
+            return s
+
+        s = s[~s.index.duplicated(keep="first")].sort_index()
+        s_daily = s.resample("D").asfreq()
+
+        try:
+            return s_daily.interpolate(method="pchip")
+        except (ValueError, ImportError):
+            try:
+                return s_daily.interpolate(method="time")
+            except ValueError:
+                return s
+
 
 class ThreeDartAvg(PlotStrategy):
     """Strategy for three dart average plot"""
@@ -70,19 +88,14 @@ class ThreeDartAvg(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
+        avg = df.overall_score.div(df.visits.where(df.visits != 0))
+        sns.scatterplot(x=df.index, y=avg,
                         color="tab:blue", marker='o', ax=ax)
-        plot= sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+        sns.lineplot(x=df.index, y=avg,
                         color="lightgray", ax=ax)
         ax.lines[0].set_linestyle("--")
-        try:
-            df_smooth = df.resample("D").interpolate(method="quadratic")
-        except ValueError:
-            df_smooth = df
-        sns.lineplot(x=df_smooth.index, 
-                        y=df_smooth.overall_score / df_smooth.visits, 
-                        color="tab:orange", ax=ax
-                        )
+        avg_smooth = self._smooth_daily_series(avg)
+        sns.lineplot(x=avg_smooth.index, y=avg_smooth, color="tab:orange", ax=ax)
         return (fig, ax)
     
 
@@ -200,19 +213,14 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.scatterplot(x=df.index, y=df.trebleless / df.visits * 100, 
+        no_treble_pct = df.trebleless.mul(100).div(df.visits.where(df.visits != 0))
+        sns.scatterplot(x=df.index, y=no_treble_pct,
                         color="tab:blue", marker='o', ax=ax)
-        sns.lineplot(x=df.index, y=df.trebleless / df.visits * 100, 
+        sns.lineplot(x=df.index, y=no_treble_pct,
                         color="lightgray", ax=ax)
         ax.lines[0].set_linestyle("--")
-        try:
-            df_smooth = df.resample("D").interpolate(method="quadratic")
-        except ValueError:
-            df_smooth = df
-        sns.lineplot(x=df_smooth.index, 
-                        y=df_smooth.trebleless / df_smooth.visits * 100, 
-                        color="tab:orange", ax=ax
-                        )
+        no_treble_smooth = self._smooth_daily_series(no_treble_pct)
+        sns.lineplot(x=no_treble_smooth.index, y=no_treble_smooth, color="tab:orange", ax=ax)
         return (fig, ax)
 
 
@@ -263,19 +271,14 @@ class AveragesAndSessions(PlotStrategy):
         fig, ax = plt.subplots(1, 1)
         fig.tight_layout(h_pad=5)
         # Creating plot
-        sns.scatterplot(x=df.index, y=df.overall_score / df.visits, 
+        avg = df.overall_score.div(df.visits.where(df.visits != 0))
+        sns.scatterplot(x=df.index, y=avg,
                         color="tab:blue", marker='o', ax=ax)
-        sns.lineplot(x=df.index, y=df.overall_score / df.visits, 
+        sns.lineplot(x=df.index, y=avg,
                         color="lightgray", ax=ax)
         ax.lines[0].set_linestyle("--")
-        try:
-            df_smooth = df.resample("D").interpolate(method="quadratic")
-        except ValueError:
-            df_smooth = df
-        sns.lineplot(x=df_smooth.index, 
-                        y=df_smooth.overall_score / df_smooth.visits, 
-                        color="tab:orange", ax=ax
-                        )
+        avg_smooth = self._smooth_daily_series(avg)
+        sns.lineplot(x=avg_smooth.index, y=avg_smooth, color="tab:orange", ax=ax)
         ax.set_ylabel("Three Dart Average")
 
         ax2 = ax.twinx()
