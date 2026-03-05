@@ -61,7 +61,8 @@ class Scoring(ttk.Frame):
         self.buttons_frame.grid(row=3, column=0, padx=10, pady=10,
                                 sticky="news")
 
-        self.throw_history_table = ThrowHistoryTable(self, text="Throw History")
+        self.throw_history_table = ThrowHistoryTable(self, text="Throw History", 
+                                                     update_callback=self.statistics.update_statistics)
         self.throw_history_table.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
         
@@ -418,12 +419,13 @@ class ButtonsFrame(ttk.LabelFrame):
 class ThrowHistoryTable(ttk.LabelFrame):
     """Class to show thrown scores in a tabular format"""
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent, *args, update_callback=None, **kwargs) -> None:
         """Construct TrowHistory table to store thrown scores"""
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=14)
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
+        self.update_callback = update_callback
         self.items = []
         self.throw_history_table = self._create_table()
         self.single_dart_stat_row = self._add_single_dart_stat_row()
@@ -514,7 +516,11 @@ class ThrowHistoryTable(ttk.LabelFrame):
         pady = height // 2
 
         text = self.throw_history_table.item(row, "values")[column_id]
-        self.entry_popup = EntryPopup(self.throw_history_table, row, column_id, text)
+        self.entry_popup = EntryPopup(
+            self.throw_history_table, row, column_id, text,
+            update_callback=self.update_callback,
+            on_tab_callback=lambda row, column: self._edit_cell(None, row, column)
+        )
         self.entry_popup.place(x=x, y=y+pady, width=width, height=height, anchor="w")
 
     def add_record(self, record: tuple) -> None:
@@ -543,12 +549,15 @@ class ThrowHistoryTable(ttk.LabelFrame):
 class EntryPopup(ScoreEntry):
     """Widget to be placed over a cell in ThrowHistory TreeView
     when it is selected via double click to be modified"""
-    def __init__(self, parent, row: str, column_id: int, text: str, **kwargs) -> None:
+    def __init__(self, parent, row: str, column_id: int, text: str, 
+                 update_callback=None, on_tab_callback=None, **kwargs) -> None:
         """Construct an EntryPopup widget"""
         super().__init__(parent, **kwargs)
         self.parent = parent
         self.row = row
         self.column_id = column_id
+        self.update_callback = update_callback
+        self.on_tab_callback = on_tab_callback
         
         self.insert(0, text) 
         self.original_score = self.get_and_convert()
@@ -593,7 +602,8 @@ class EntryPopup(ScoreEntry):
             self.parent.item(self.row, values=updated_th_values)
 
             # Update Statistics fields
-            self.master.master.master.statistics.update_statistics()
+            if self.update_callback:
+                self.update_callback()
 
             self.destroy()
         return 1
@@ -603,9 +613,9 @@ class EntryPopup(ScoreEntry):
         the updated score is valid"""
         success = self.on_return(event=None)
         if success == 1:
-            if self.column_id != 3:
-                self.parent.master._edit_cell(event=None, row=self.row, 
-                                            column=f"#{self.column_id + 2}")
+            if self.column_id != 3 and self.on_tab_callback:
+                self.on_tab_callback(row=self.row, 
+                                     column=f"#{self.column_id + 2}")
         else:
             return "break"
 
@@ -614,9 +624,9 @@ class EntryPopup(ScoreEntry):
         the updated score is valid"""
         success = self.on_return(event=None)
         if success == 1:
-            if self.column_id != 1:
-                self.parent.master._edit_cell(event=None, row=self.row,
-                                            column=f"#{self.column_id}")
+            if self.column_id != 1 and self.on_tab_callback:
+                self.on_tab_callback(row=self.row, 
+                                     column=f"#{self.column_id}")
         else:
             return "break"
         
