@@ -32,9 +32,16 @@ class PlotStrategy(ABC):
         fig.tight_layout()
         return (fig, ax)
 
-    @abstractmethod
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> None:
-        pass
+        """Default implementation: connect, query, resample. Override only if you 
+        data loading differs."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
+        df = df.set_index("date")
+        df = df.resample(sampling_rule).sum()
+        return df
 
     @abstractmethod
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
@@ -116,16 +123,6 @@ class ThreeDartAvg(PlotStrategy):
         "sql", 
         "avg.sql")
       
-    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by running the SQL script via DataBase."""
-        df = db.query_to_dataframe(
-            sql_script,
-            parse_dates={"date": {"format": "%Y-%m-%d"}},
-        )
-        df = df.set_index("date")
-        df = df.resample(sampling_rule).sum()
-        return df
-    
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
@@ -155,16 +152,6 @@ class NrOfSessions(PlotStrategy):
         "sql", 
         "nr_of_games.sql")
       
-    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by running the SQL script via DataBase."""
-        df = db.query_to_dataframe(
-            sql_script,
-            parse_dates={"date": {"format": "%Y-%m-%d"}},
-        )
-        df = df.set_index("date")
-        df = df.resample(sampling_rule).sum()
-        return df
-
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
@@ -187,16 +174,6 @@ class NrOfDarts(PlotStrategy):
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
         "sql", 
         "nr_of_darts.sql")
-
-    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by running the SQL script via DataBase."""
-        df = db.query_to_dataframe(
-            sql_script,
-            parse_dates={"date": {"format": "%Y-%m-%d"}},
-        )
-        df = df.set_index("date")
-        df = df.resample(sampling_rule).sum()
-        return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
@@ -221,16 +198,6 @@ class NrOf180s(PlotStrategy):
         "sql", 
         "nr_of_180s.sql")
 
-    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by running the SQL script via DataBase."""
-        df = db.query_to_dataframe(
-            sql_script,
-            parse_dates={"date": {"format": "%Y-%m-%d"}},
-        )
-        df = df.set_index("date")
-        df = df.resample(sampling_rule).sum()
-        return df
-
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
         # Figure setup
@@ -253,16 +220,6 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
         "sql", 
         "nr_of_trebleless_visits.sql")
-
-    def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by running the SQL script via DataBase."""
-        df = db.query_to_dataframe(
-            sql_script,
-            parse_dates={"date": {"format": "%Y-%m-%d"}},
-        )
-        df = df.set_index("date")
-        df = df.resample(sampling_rule).sum()
-        return df
 
     def _create_plot_content(self, df: pd.DataFrame) -> Tuple[Figure, Axes]:
         """Set up plot and create curves"""
