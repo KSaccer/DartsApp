@@ -1,5 +1,3 @@
-import os
-
 GEOMETRY_W = 1000
 GEOMETRY_H = 600
 
