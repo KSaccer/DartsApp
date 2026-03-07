@@ -5,7 +5,13 @@ from datetime import date
 from tkcalendar import DateEntry
 
 from gui.widgets.custom_popup import CustomPopup
-from ..constants import *
+from ..constants import (
+    FONT_TITLE,
+    COLOR_FONT_TITLE,
+    COLOR_FONT_BEST_WORST,
+    COLOR_BG_DATE_ENTRY,
+    FONT_BEST_WORST_DISPLAY,
+)
 
 
 class BestWorst(ttk.Frame):

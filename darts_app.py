@@ -3,7 +3,14 @@ import tkinter as tk
 import tkinter.ttk as ttk
 
 from db.database import DataBase
-from gui.constants import *
+from gui.constants import (
+    GEOMETRY_W,
+    GEOMETRY_H,
+    FONT_DEFAULT,
+    FONT_TREEVIEW,
+    COLOR_FONT_DEFAULT,
+    COLOR_BG_MENU,
+)
 from gui.widgets.custom_popup import CustomPopup
 from gui.widgets.menu import Menu
 from gui.pages.dashboard import Dashboard

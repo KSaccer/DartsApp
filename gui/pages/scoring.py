@@ -4,7 +4,10 @@ import re
 from tkinter import messagebox
 from datetime import datetime
 from typing import Generator
-from ..constants import *
+from ..constants import (
+    FONT_TITLE,
+    COLOR_FONT_TITLE,
+)
 from ..widgets.custom_popup import CustomPopup
 
 

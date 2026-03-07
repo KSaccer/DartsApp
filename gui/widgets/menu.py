@@ -1,6 +1,11 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-from ..constants import *
+from ..constants import (
+    FONT_MENU,
+    COLOR_BG_MENU,
+    COLOR_FONT_MENU,
+    COLOR_BG_MENU_HOVER,
+)
 
 
 class Menu(ttk.Frame):

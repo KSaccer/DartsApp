@@ -1,6 +1,10 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-from ..constants import *
+from ..constants import (
+    FONT_DEFAULT,
+    GEOMETRY_W,
+    GEOMETRY_H,
+)
 
 
 class CustomPopup(tk.Toplevel):

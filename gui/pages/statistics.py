@@ -2,8 +2,19 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from ..constants import *
-from .plot_strategies import *
+from ..constants import (
+    FONT_TITLE,
+    COLOR_FONT_TITLE,
+)
+from .plot_strategies import (
+    PlotStrategy,
+    ThreeDartAvg,
+    NrOfSessions,
+    NrOfDarts,
+    NrOf180s,
+    PercentageOfTreblelessVisits,
+    AveragesAndSessions,
+)
 
 
 class StatPage(ttk.Frame):
