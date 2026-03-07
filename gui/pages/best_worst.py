@@ -166,11 +166,11 @@ class BestWorstSettings(ttk.LabelFrame):
                         FROM games
                         JOIN throws ON games.game_id=throws.game_id
                         WHERE date BETWEEN ? AND ?;"""
-        
-        df = pd.read_sql_query(sql_script, self.master.db.db_conn, 
-                               params=(str(start_date), str(end_date)),
-                               parse_dates={"date": {"format": "%Y-%m-%d"}})
-        return df
+        return self.master.db.query_to_dataframe_raw(
+            sql_script,
+            params=(str(start_date), str(end_date)),
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
     
     def _find_best_and_worst(self, df: pd.DataFrame, rolling_avg_window) -> tuple:
         """Find best and worst 3-dart averages using the given window

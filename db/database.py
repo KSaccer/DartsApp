@@ -3,6 +3,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 from shutil import copy
+from typing import Optional
+
+import pandas as pd
 import config
 
 SQL_SCRIPT_PATH = os.path.join(
@@ -101,6 +104,31 @@ class DataBase():
         except OSError as e:
             print(f"Error during backup: {e}")
             return False
+
+    def query_to_dataframe_raw(
+        self,
+        sql: str,
+        params: Optional[tuple] = None,
+        parse_dates: Optional[dict] = None,
+    ) -> pd.DataFrame:
+        """Execute a raw SQL query and return the result as a DataFrame."""
+        return pd.read_sql_query(
+            sql,
+            self.db_conn,
+            params=params,
+            parse_dates=parse_dates,
+        )
+
+    def query_to_dataframe(
+        self,
+        sql_path: str,
+        params: Optional[tuple] = None,
+        parse_dates: Optional[dict] = None,
+    ) -> pd.DataFrame:
+        """Execute a SQL script file and return the result as a DataFrame."""
+        with open(sql_path, "r") as query_file:
+            sql = query_file.read()
+        return self.query_to_dataframe_raw(sql, params=params, parse_dates=parse_dates)
 
 
 if __name__ == "__main__":

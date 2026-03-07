@@ -117,11 +117,11 @@ class ThreeDartAvg(PlotStrategy):
         "avg.sql")
       
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running the SQL script via DataBase."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
         return df
@@ -156,11 +156,11 @@ class NrOfSessions(PlotStrategy):
         "nr_of_games.sql")
       
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running the SQL script via DataBase."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
         return df
@@ -189,11 +189,11 @@ class NrOfDarts(PlotStrategy):
         "nr_of_darts.sql")
 
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running the SQL script via DataBase."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
         return df
@@ -222,11 +222,11 @@ class NrOf180s(PlotStrategy):
         "nr_of_180s.sql")
 
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running the SQL script via DataBase."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
         return df
@@ -255,11 +255,11 @@ class PercentageOfTreblelessVisits(PlotStrategy):
         "nr_of_trebleless_visits.sql")
 
     def _create_df(self, db: DataBase, sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        with open(sql_script, "r") as query:
-            df = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running the SQL script via DataBase."""
+        df = db.query_to_dataframe(
+            sql_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df = df.set_index("date")
         df = df.resample(sampling_rule).sum()
         return df
@@ -310,17 +310,17 @@ class AveragesAndSessions(PlotStrategy):
         return (fig, ax_top)
 
     def _create_df(self, db: "DataBase", sql_script: str, sampling_rule: str) -> pd.DataFrame:
-        """Create the DataFrame by connecting to the database and running
-        the SQL script"""
-        
-        with open(self.sql_avg_script, "r") as query:
-            df_avg = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+        """Create the DataFrame by running SQL scripts via DataBase."""
+        df_avg = db.query_to_dataframe(
+            self.sql_avg_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df_avg = df_avg.set_index("date")
-        
-        with open(self.sql_sessions_script, "r") as query:
-            df_sessions = pd.read_sql_query(query.read(), db.db_conn, 
-                                   parse_dates={"date": {"format": "%Y-%m-%d"}})
+
+        df_sessions = db.query_to_dataframe(
+            self.sql_sessions_script,
+            parse_dates={"date": {"format": "%Y-%m-%d"}},
+        )
         df_sessions = df_sessions.set_index("date")
 
         df = pd.merge(df_avg, df_sessions, on="date", how="outer").fillna(0)
