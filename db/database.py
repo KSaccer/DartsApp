@@ -80,7 +80,8 @@ class DataBase():
         record = (game_id, throw_1, throw_2, throw_3, sum)"""
         cursor = self.db_conn.cursor()
         cursor.execute(
-            "INSERT INTO throws VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO throws (game_id, throw_1, throw_2, throw_3, sum) "
+            "VALUES (?, ?, ?, ?, ?)",
             (*record, )
             )
         self.db_conn.commit()
