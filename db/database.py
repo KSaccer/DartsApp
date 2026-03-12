@@ -50,6 +50,7 @@ class DataBase():
     def create_connection(self) -> sqlite3.Connection:
         """Create an sqlite3 connection with the database"""
         db_conn = sqlite3.connect(self.db_path)
+        db_conn.execute("PRAGMA foreign_keys = ON")
         return db_conn
     
     def close_connection(self) -> None:
