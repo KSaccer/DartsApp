@@ -107,4 +107,11 @@ class DartsApp(tk.Tk):
         self.db.close_connection()
         self.quit()
 
-DartsApp()
+
+def main() -> None:
+    """Launch the application."""
+    DartsApp()
+
+
+if __name__ == "__main__":
+    main()
