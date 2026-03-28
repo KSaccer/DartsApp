@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Generator
 from ..constants import (
     FONT_TITLE,
     COLOR_FONT_TITLE,
@@ -24,6 +24,16 @@ class Game():
         self.game_started = True
 
 
+@dataclass(frozen=True)
+class ThrowRecord:
+    """Typed session record for a single three-dart visit."""
+    visit_id: int
+    throw_1: str
+    throw_2: str
+    throw_3: str
+    total: int
+
+
 class Scoring(ttk.Frame):
     """Main class of Scoring page"""
     def __init__(self, parent, db, *args, **kwargs) -> None:
@@ -41,6 +51,7 @@ class Scoring(ttk.Frame):
         self.db = db
         # Initialize Game
         self.game = Game(self.db.get_last_game_id() + 1)
+        self.throw_records: list[ThrowRecord] = []
         # populating widgets
         self.create_gui()
 
@@ -62,8 +73,7 @@ class Scoring(ttk.Frame):
         self.buttons_frame.grid(row=3, column=0, padx=10, pady=10,
                                 sticky="news")
 
-        self.throw_history_table = ThrowHistoryTable(self, text="Throw History", 
-                                                     update_callback=self.statistics.update_statistics)
+        self.throw_history_table = ThrowHistoryTable(self, text="Throw History")
         self.throw_history_table.grid(row=1, column=1, padx=10, pady=10,
                                 rowspan=3, sticky="news")
         
@@ -88,6 +98,53 @@ class Scoring(ttk.Frame):
         else:
             converted_score = int(score)
         return (score, converted_score)
+
+    def add_throw_record(self, throws: list[tuple[str, int]]) -> None:
+        """Append a typed throw record and sync the table and stats."""
+        visit_id = len(self.throw_records) + 1
+        total = sum(throw[1] for throw in throws)
+        record = ThrowRecord(
+            visit_id=visit_id,
+            throw_1=throws[0][0].upper(),
+            throw_2=throws[1][0].upper(),
+            throw_3=throws[2][0].upper(),
+            total=total,
+        )
+        self.throw_records.append(record)
+        self.throw_history_table.add_record(record)
+        self.statistics.update_statistics()
+
+    def update_throw_record(self, visit_id: int, column_id: int,
+                            score: tuple[str, int]) -> bool:
+        """Replace one throw in the session model and sync the UI."""
+        if column_id not in {1, 2, 3}:
+            return False
+
+        record_index = visit_id - 1
+        if not 0 <= record_index < len(self.throw_records):
+            return False
+
+        record = self.throw_records[record_index]
+        throws = [record.throw_1, record.throw_2, record.throw_3]
+        converted_scores = [Scoring.convert_score(value)[1] for value in throws]
+        throws[column_id - 1] = score[0].upper()
+        converted_scores[column_id - 1] = score[1]
+
+        updated_record = ThrowRecord(
+            visit_id=record.visit_id,
+            throw_1=throws[0],
+            throw_2=throws[1],
+            throw_3=throws[2],
+            total=sum(converted_scores),
+        )
+        self.throw_records[record_index] = updated_record
+        self.throw_history_table.update_record(updated_record)
+        self.statistics.update_statistics()
+        return True
+
+    def clear_throw_records(self) -> None:
+        """Reset the in-memory session model."""
+        self.throw_records.clear()
 
 
 class PageTitle(ttk.Frame):
@@ -162,17 +219,13 @@ class ScoreEntryBlock(ttk.LabelFrame):
             return
         else:
             self.add_throws_into_throw_history_table()
-            self.parent.statistics.update_statistics()
             self.clear_values()
             self.throw_1.value.focus_set()
 
     def add_throws_into_throw_history_table(self) -> None:
         """Get entried scores and populate throw history table"""
         throws = self.get_values()
-        throws_sum = sum([throw[1] for throw in throws])
-        # populate table with throw data
-        record = tuple([throw[0].upper() for throw in throws] + [throws_sum])
-        self.parent.throw_history_table.add_record(record)
+        self.parent.add_throw_record(throws)
 
 
 class ThrowEntry():
@@ -273,9 +326,9 @@ class Statistics(ttk.LabelFrame):
             "AVG:", dart_avg_1, dart_avg_2, dart_avg_3))
 
     def calculate_statistics(self) -> dict:
-        """Get throws from history table, calculate statistics then
+        """Get throws from the session model, calculate statistics then
         return them as a dictionary"""
-        throws = list(self.master.throw_history_table.get_records())
+        throws = self.parent.throw_records
         darts_thrown = len(throws) * 3
 
         # Guard clause: return defaults if no throws recorded
@@ -297,15 +350,18 @@ class Statistics(ttk.LabelFrame):
         dart_avg_1, dart_avg_2, dart_avg_3 = 0, 0, 0
 
         for throw in throws:
-            score += throw[-1]
-            dart_avg_1 += Scoring.convert_score(throw[1])[1]
-            dart_avg_2 += Scoring.convert_score(throw[2])[1]
-            dart_avg_3 += Scoring.convert_score(throw[3])[1]
-            if throw[-1] > current_max:
-                current_max = throw[-1]
-            is_treble_thrown = any([True if str(single_throw)[0] == "T" 
-                                    else False 
-                                    for single_throw in throw[1:4]])
+            score += throw.total
+            dart_avg_1 += Scoring.convert_score(throw.throw_1)[1]
+            dart_avg_2 += Scoring.convert_score(throw.throw_2)[1]
+            dart_avg_3 += Scoring.convert_score(throw.throw_3)[1]
+            if throw.total > current_max:
+                current_max = throw.total
+            is_treble_thrown = any(single_throw.startswith("T")
+                                   for single_throw in (
+                                       throw.throw_1,
+                                       throw.throw_2,
+                                       throw.throw_3,
+                                   ))
             if not is_treble_thrown:
                 nr_of_trebleless_visits += 1
 
@@ -327,8 +383,7 @@ class Statistics(ttk.LabelFrame):
         }
         
     def update_statistics(self) -> None:
-        """Reevaluate all statistics field values using the item from 
-        the throw history table"""
+        """Reevaluate all statistics field values from the session model."""
         updated_stats = self.calculate_statistics()
         self.set_statistics(**updated_stats)
 
@@ -378,9 +433,11 @@ class ButtonsFrame(ttk.LabelFrame):
 
     def restart(self) -> None:
         """Reset session - clear statistics and table records"""
+        self.parent.clear_throw_records()
         self.parent.statistics.reset()
         self.parent.throw_history_table.clear_table()
         self.parent.game.start = None
+        self.parent.game.game_started = False
 
     def finish(self) -> None:
         """Insert data into database and start new session"""
@@ -399,9 +456,14 @@ class ButtonsFrame(ttk.LabelFrame):
         self.parent.db.insert_game(game_data)
 
         # Insert throws
-        for value in self.parent.throw_history_table.get_records():
-            throw_data = tuple(value[1::])
-            record_to_insert =(self.parent.game.game_id,) + throw_data
+        for record in self.parent.throw_records:
+            throw_data = (
+                record.throw_1,
+                record.throw_2,
+                record.throw_3,
+                record.total,
+            )
+            record_to_insert = (self.parent.game.game_id,) + throw_data
             self.parent.db.insert_data(record_to_insert)
 
         # Backup database
@@ -420,14 +482,13 @@ class ButtonsFrame(ttk.LabelFrame):
 class ThrowHistoryTable(ttk.LabelFrame):
     """Class to show thrown scores in a tabular format"""
 
-    def __init__(self, parent, *args, update_callback=None, **kwargs) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Construct TrowHistory table to store thrown scores"""
         super().__init__(parent, *args, **kwargs)
         self.rowconfigure(0, weight=14)
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
-        self.update_callback = update_callback
-        self.items = []
+        self.row_items: dict[int, str] = {}
         self.throw_history_table = self._create_table()
         self.single_dart_stat_row = self._add_single_dart_stat_row()
         self._create_bindings()
@@ -517,51 +578,67 @@ class ThrowHistoryTable(ttk.LabelFrame):
         pady = height // 2
 
         text = self.throw_history_table.item(row, "values")[column_id]
+        visit_id = int(self.throw_history_table.item(row, "values")[0])
         self.entry_popup = EntryPopup(
-            self.throw_history_table, row, column_id, text,
-            update_callback=self.update_callback,
+            self.throw_history_table, row, visit_id, column_id, text,
+            save_callback=self.master.update_throw_record,
             on_tab_callback=lambda row, column: self._edit_cell(None, row, column)
         )
         self.entry_popup.place(x=x, y=y+pady, width=width, height=height, anchor="w")
 
-    def add_record(self, record: tuple) -> None:
-        """Add record to TreeView, update item list
-          and move scroll to bottom"""
-        if self.items:
-            last_id = int(self.throw_history_table.item(self.items[-1])["values"][0])
-        else:
-            last_id = 0
-        values = [last_id + 1] + [*record]
-        self.throw_history_table.insert("", tk.END, values=values)
-        self.items = self.throw_history_table.get_children()
+    def add_record(self, record: ThrowRecord) -> None:
+        """Render one typed record into the TreeView."""
+        item_id = self.throw_history_table.insert(
+            "", tk.END,
+            values=(
+                record.visit_id,
+                record.throw_1,
+                record.throw_2,
+                record.throw_3,
+                record.total,
+            )
+        )
+        self.row_items[record.visit_id] = item_id
         self.throw_history_table.yview_moveto(1)
+
+    def update_record(self, record: ThrowRecord) -> None:
+        """Refresh an existing displayed record from the session model."""
+        item_id = self.row_items.get(record.visit_id)
+        if item_id is None:
+            return
+        self.throw_history_table.item(
+            item_id,
+            values=(
+                record.visit_id,
+                record.throw_1,
+                record.throw_2,
+                record.throw_3,
+                record.total,
+            ),
+        )
 
     def clear_table(self) -> None:
         """Clear all entries from TreeView"""
-        self.throw_history_table.delete(*self.items)
-        self.items = []
-
-    def get_records(self) -> Generator[str, None, None]:
-        """Yield data from TreevView line by line"""
-        for item in self.items:
-            yield self.throw_history_table.item(item)["values"]
+        self.throw_history_table.delete(*self.throw_history_table.get_children())
+        self.row_items.clear()
 
 
 class EntryPopup(ScoreEntry):
     """Widget to be placed over a cell in ThrowHistory TreeView
     when it is selected via double click to be modified"""
-    def __init__(self, parent, row: str, column_id: int, text: str, 
-                 update_callback=None, on_tab_callback=None, **kwargs) -> None:
+    def __init__(self, parent, row: str, visit_id: int, column_id: int,
+                 text: str, save_callback=None, on_tab_callback=None,
+                 **kwargs) -> None:
         """Construct an EntryPopup widget"""
         super().__init__(parent, **kwargs)
         self.parent = parent
         self.row = row
+        self.visit_id = visit_id
         self.column_id = column_id
-        self.update_callback = update_callback
+        self.save_callback = save_callback
         self.on_tab_callback = on_tab_callback
         
         self.insert(0, text) 
-        self.original_score = self.get_and_convert()
         self['exportselection'] = False
         self.focus_force()
         self.selection_range(0, 'end')
@@ -578,33 +655,21 @@ class EntryPopup(ScoreEntry):
         self.bind("<FocusOut>", lambda event: self.destroy())
 
     def on_return(self, event) -> 1 | -1:
-        """Update record in ThrowHistory with the new value.
+        """Update the session model with the new value.
         Return -1 if updated score is not valid"""
         updated_score = self.get_and_convert() 
         if not updated_score:
             self.config(foreground="red")
             return -1
         else:
-            # Convert to list, to support item assignment
-            original_th_values = list(self.parent.item(self.row, "values"))
-
-            # Update sum field
-            original_sum = original_th_values[-1]
-            updated_sum = (int(original_sum) 
-                        + updated_score[1] 
-                        - self.original_score[1])
-
-            # Update values        
-            updated_th_values = original_th_values
-            updated_th_values[self.column_id] = updated_score[0]
-            updated_th_values[-1] = updated_sum
-
-            # Update record in ThrowHistory
-            self.parent.item(self.row, values=updated_th_values)
-
-            # Update Statistics fields
-            if self.update_callback:
-                self.update_callback()
+            if self.save_callback:
+                success = self.save_callback(
+                    self.visit_id,
+                    self.column_id,
+                    updated_score,
+                )
+                if not success:
+                    return -1
 
             self.destroy()
         return 1
