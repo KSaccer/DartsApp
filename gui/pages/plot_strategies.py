@@ -26,7 +26,6 @@ class PlotStrategy(ABC):
         """Execute plot builder process"""
         df = self._create_df(db, self.sql_script, sampling_rule)
         sns.set_theme(style="whitegrid", context="notebook")
-        plt.close('all')
         fig, ax = self._create_plot_content(df)
         fig, ax = self._format_plot_content(fig, ax, sampling_rule)
         fig.tight_layout()

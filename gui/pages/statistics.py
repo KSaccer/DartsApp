@@ -1,4 +1,5 @@
 from __future__ import annotations
+import matplotlib.pyplot as plt
 import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -155,9 +156,13 @@ class PlotCanvas(ttk.Frame):
         
     def add_plot(self, plot: "Plot") -> None:
         """Add Figure to canvas"""
-        fig_size = self.canvas.figure.get_size_inches()
-        self.canvas.figure.clear()
-        plot.fig.set_size_inches(fig_size)
+        old_fig = self.canvas.figure
+
+        if old_fig is not None:
+            fig_size = old_fig.get_size_inches()
+            plot.fig.set_size_inches(fig_size)
+            plt.close(old_fig)
+            
         self.canvas.figure = plot.fig
         self.plot = plot
 
