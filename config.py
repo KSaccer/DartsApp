@@ -7,6 +7,7 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.ini")
 DEFAULTS = {
     "database": {
         "backup_path": os.path.join(CONFIG_DIR, "db", "backups"),
+        "backup_keep_count": "20",
     }
 }
 

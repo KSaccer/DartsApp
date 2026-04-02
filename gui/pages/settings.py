@@ -33,7 +33,9 @@ class Settings(ttk.Frame):
             self.config.add_section("database")
 
         self.backup_var = tk.StringVar()
+        self.keep_count_var = tk.StringVar()
         self._saved_backup_path = ""
+        self._saved_keep_count = ""
         self._gui_created = False
 
         self._configure_layout()
@@ -71,6 +73,26 @@ class Settings(ttk.Frame):
         )
         self.browse_btn.grid(row=0, column=2, sticky="w", padx=(8, 0), pady=5)
 
+        ttk.Label(self.database_frame, text="Kept Backups:").grid(
+            row=1, column=0, sticky="w", padx=(0, 10), pady=5
+        )
+
+        vcmd = (self.register(self._validate_keep_count_input), "%P")
+        ivcmd = (self.register(self._on_invalid_keep_count),)
+        self.keep_count_spinbox = ttk.Spinbox(
+            self.database_frame,
+            from_=1,
+            to=999,
+            increment=1,
+            width=6,
+            textvariable=self.keep_count_var,
+            validate="key",
+            validatecommand=vcmd,
+            invalidcommand=ivcmd,
+        )
+        self.keep_count_spinbox.grid(row=1, column=1, sticky="w", pady=5)
+        self.keep_count_spinbox.bind("<Return>", self._on_enter_pressed)
+
         actions = ttk.Frame(self)
         actions.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
         actions.columnconfigure(0, weight=1)
@@ -85,6 +107,7 @@ class Settings(ttk.Frame):
         self.save_btn.grid(row=0, column=3)
 
         self.backup_var.trace_add("write", self._on_form_changed)
+        self.keep_count_var.trace_add("write", self._on_form_changed)
         self.bind("<Return>", self._on_enter_pressed)
         self._gui_created = True
 
@@ -104,11 +127,26 @@ class Settings(ttk.Frame):
         raw_value = self.config.get("database", "backup_path", fallback="")
         return self._normalize_path(raw_value)
 
+    def _get_config_backup_keep_count(self) -> str:
+        """Read the retained backup count from the current config object."""
+        raw_value = self.config.get(
+            "database",
+            "backup_keep_count",
+            fallback=config.DEFAULTS["database"]["backup_keep_count"],
+        )
+        try:
+            return str(max(1, int(raw_value)))
+        except (TypeError, ValueError):
+            return config.DEFAULTS["database"]["backup_keep_count"]
+
     def _load_form_values_from_config(self) -> None:
         """Populate form fields from config and refresh the save button state."""
         backup_path = self._get_config_backup_path()
+        keep_count = self._get_config_backup_keep_count()
         self._saved_backup_path = backup_path
+        self._saved_keep_count = keep_count
         self.backup_var.set(backup_path)
+        self.keep_count_var.set(keep_count)
         self._update_save_state()
 
     def _on_form_changed(self, *_: object) -> None:
@@ -118,7 +156,15 @@ class Settings(ttk.Frame):
     def _update_save_state(self) -> None:
         """Enable Save only when the current form value differs from saved data."""
         current_value = self._normalize_path(self.backup_var.get())
-        state = "normal" if current_value != self._saved_backup_path else "disabled"
+        current_keep_count = self.keep_count_var.get().strip()
+        state = (
+            "normal"
+            if (
+                current_value != self._saved_backup_path
+                or current_keep_count != self._saved_keep_count
+            )
+            else "disabled"
+        )
         self.save_btn.config(state=state)
 
     def _on_enter_pressed(self, event: object | None = None) -> str:
@@ -155,6 +201,36 @@ class Settings(ttk.Frame):
 
         return normalized, None
 
+    def _validate_keep_count_input(self, value: str) -> bool:
+        """Allow only positive integer input in the kept-backups field."""
+        if value == "":
+            return True
+        try:
+            is_valid = int(value) >= 1
+        except ValueError:
+            return False
+        if is_valid:
+            self.keep_count_spinbox.config(foreground="black")
+        return is_valid
+
+    def _on_invalid_keep_count(self) -> None:
+        """Highlight invalid kept-backups input."""
+        if self.keep_count_var.get():
+            self.keep_count_spinbox.config(foreground="red")
+
+    def _validate_backup_keep_count(self, value: str) -> tuple[str | None, str | None]:
+        """Validate the retained backup count and return a normalized value or an error."""
+        normalized = value.strip()
+        if not normalized:
+            return None, "Kept backups must be a positive integer."
+        try:
+            keep_count = int(normalized)
+        except ValueError:
+            return None, "Kept backups must be a positive integer."
+        if keep_count < 1:
+            return None, "Kept backups must be at least 1."
+        return str(keep_count), None
+
     def choose_backup_dir(self) -> None:
         """Open a folder picker and store the selected backup directory."""
         dialog_kwargs = {"title": "Select Backup Directory"}
@@ -183,7 +259,11 @@ class Settings(ttk.Frame):
     def reset_to_defaults(self) -> None:
         """Reset form fields to application default values without saving."""
         default_backup = config.DEFAULTS.get("database", {}).get("backup_path", "")
+        default_keep_count = config.DEFAULTS.get("database", {}).get(
+            "backup_keep_count", "20"
+        )
         self.backup_var.set(self._normalize_path(default_backup))
+        self.keep_count_var.set(default_keep_count)
 
     def save_settings(self) -> None:
         """Validate and persist the current settings, then update the form state."""
@@ -197,10 +277,23 @@ class Settings(ttk.Frame):
             )
             return
 
+        normalized_keep_count, error_message = self._validate_backup_keep_count(
+            self.keep_count_var.get()
+        )
+        if error_message:
+            CustomPopup(
+                popup_type="error",
+                title="Settings",
+                message=error_message,
+                master=self.winfo_toplevel(),
+            )
+            return
+
         if not self.config.has_section("database"):
             self.config.add_section("database")
 
         self.config["database"]["backup_path"] = normalized_path
+        self.config["database"]["backup_keep_count"] = normalized_keep_count
 
         try:
             config.save_config(self.config)
@@ -214,12 +307,14 @@ class Settings(ttk.Frame):
             return
 
         self.backup_var.set(normalized_path)
+        self.keep_count_var.set(normalized_keep_count)
         self._saved_backup_path = normalized_path
+        self._saved_keep_count = normalized_keep_count
         self._update_save_state()
         CustomPopup(
             popup_type="information",
             title="Settings",
-            message="Backup folder saved.",
+            message="Settings saved.",
             master=self.winfo_toplevel(),
         )
 

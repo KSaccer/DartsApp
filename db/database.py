@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from shutil import copy
 from typing import Optional
+from glob import glob
 
 import pandas as pd
 import config
@@ -21,6 +22,20 @@ def _get_backup_path() -> str:
         "backup_path",
         fallback=config.DEFAULTS["database"]["backup_path"],
     )
+
+def _get_backup_keep_count() -> int:
+    """Return the configured number of backups to retain."""
+    cfg = config.load_config()
+    raw_value = cfg.get(
+        "database",
+        "backup_keep_count",
+        fallback=config.DEFAULTS["database"]["backup_keep_count"],
+    )
+    try:
+        keep_count = int(raw_value)
+    except (TypeError, ValueError):
+        keep_count = int(config.DEFAULTS["database"]["backup_keep_count"])
+    return max(1, keep_count)
 
 class DataBase():
     """Class for handling darts score database"""
@@ -92,15 +107,22 @@ class DataBase():
         Return True if backup was successful, False otherwise"""
         try:
             backup_path = _get_backup_path()
+            keep_count = _get_backup_keep_count()
 
             # Ensure backup directory exists
             os.makedirs(backup_path, exist_ok=True)
 
             # Create backup filename with timestamp            
             current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_file = f"{Path(self.db_path).stem}_{current_datetime}.db"
+            db_stem = Path(self.db_path).stem
+            backup_file = f"{db_stem}_{current_datetime}.db"
             backup_full_path = os.path.join(backup_path, backup_file)
             copy(self.db_path, backup_full_path)
+
+            pattern = os.path.join(backup_path, f"{db_stem}_*.db")
+            backups = sorted(glob(pattern))
+            while len(backups) > keep_count:
+                os.remove(backups.pop(0))
             return True
 
         except OSError as e:
